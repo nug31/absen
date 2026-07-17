@@ -1,16 +1,48 @@
-# React + Vite
+# 📋 Absenio
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+**Absenio** adalah aplikasi absensi digital modern untuk sekolah, dirancang untuk mempermudah proses pencatatan kehadiran siswa oleh guru secara real-time.
 
-Currently, two official plugins are available:
+## ✨ Fitur Utama
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- 🎓 **Mode Guru** — Kelola absensi, rekap kehadiran, dan data siswa
+- 🧑‍🎓 **Mode Siswa** — Siswa dapat melakukan absen secara mandiri
+- 📍 **Validasi GPS** — Memastikan siswa absen dari lokasi yang benar
+- 📊 **Panel Rekap** — Laporan kehadiran harian & bulanan
+- 🖼️ **Lightbox Foto** — Bukti foto saat absensi
+- 💾 **Penyimpanan Lokal** — Data tersimpan di browser
 
-## React Compiler
+## 🚀 Cara Menjalankan
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# Install dependencies
+npm install
 
-## Expanding the Oxlint configuration
+# Jalankan mode development
+npm run dev
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+# Build untuk production
+npm run build
+```
+
+## 🛠️ Teknologi
+
+- **React 19** + Vite
+- **Vanilla CSS** (tanpa framework)
+- **Geolocation API** untuk validasi lokasi
+
+## 📁 Struktur Proyek
+
+```
+src/
+├── components/
+│   ├── GuruMode/     # Komponen mode guru
+│   ├── SiswaMode/    # Komponen mode siswa
+│   └── UI/           # Komponen UI reusable
+├── utils/            # Helper functions (geo, storage)
+├── data/             # Data default siswa
+└── App.jsx           # Root komponen
+```
+
+---
+
+> Dibuat dengan ❤️ untuk kemudahan absensi sekolah digital
