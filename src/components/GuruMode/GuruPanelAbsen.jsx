@@ -81,6 +81,19 @@ export default function GuruPanelAbsen() {
     await loadData();
   };
 
+  const handleReset = async (stuId) => {
+    if (!window.confirm('Hapus data absensi siswa ini?')) return;
+    const { error } = await supabase.from('attendance').delete()
+      .eq('student_id', stuId).eq('date', dateStr);
+      
+    if (error) { showToast('Gagal menghapus: ' + error.message); return; }
+    
+    const newAtt = { ...attendance };
+    delete newAtt[stuId];
+    setAttendance(newAtt);
+    showToast('Absensi dihapus');
+  };
+
   const handleStatusToggle = async (stuId, status) => {
     const existing = attendance[stuId];
 
@@ -181,6 +194,15 @@ export default function GuruPanelAbsen() {
                           {code}
                         </button>
                       ))}
+                      {rec && (
+                        <button
+                          onClick={() => handleReset(s.id)}
+                          title="Hapus / Reset Absen"
+                          style={{ color: '#ef4444', marginLeft: 4 }}
+                        >
+                          ✕
+                        </button>
+                      )}
                     </div>
                   </div>
 
