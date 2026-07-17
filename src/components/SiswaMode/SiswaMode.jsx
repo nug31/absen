@@ -49,10 +49,17 @@ export default function SiswaMode() {
       if (!error && data) {
         found = data;
       } else {
-        // Fallback ke defaultStudents jika tabel kosong
+        // Fallback ke defaultStudents jika tabel Supabase masih kosong
         found = defaultStudents.find(
           s => s.nis && s.nis.toLowerCase() === nis.trim().toLowerCase()
         );
+
+        if (found) {
+          // Upsert siswa ke Supabase agar FK attendance tidak gagal
+          await supabase
+            .from('students')
+            .upsert({ id: found.id, name: found.name, nis: found.nis }, { onConflict: 'id' });
+        }
       }
 
       if (!found) {
