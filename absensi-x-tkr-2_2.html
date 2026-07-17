@@ -1,0 +1,854 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:#EDEFF1; --surface:#FFFFFF; --surface-2:#F5F6F8;
+    --ink:#20242B; --ink-soft:#5B6370; --line:#D7DBDF;
+    --accent:#FF6A13; --present:#2F9E44; --sick:#F08C00;
+    --izin:#4C6EF5; --alpa:#E03131; --pending:#9C6ADE;
+    --radius:10px; --shadow:0 1px 2px rgba(20,22,26,.06), 0 4px 14px rgba(20,22,26,.05);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;}
+  #absensi-root{font-family:'Inter',sans-serif; color:var(--ink); background:var(--bg); min-height:100%; padding:20px 14px 60px;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .display{font-family:'Oswald',sans-serif;}
+  .wrap{max-width:560px; margin:0 auto;}
+  .wrap.wide{max-width:820px;}
+
+  .plate{background:linear-gradient(180deg,#2B2F35,#1B1E22); border-radius:14px; padding:18px 20px; display:flex; align-items:center; justify-content:space-between; gap:14px; box-shadow:var(--shadow); border:1px solid #0F1113; position:relative; overflow:hidden;}
+  .plate::before{content:""; position:absolute; inset:0; background:repeating-linear-gradient(115deg, rgba(255,255,255,.025) 0 2px, transparent 2px 10px); pointer-events:none;}
+  .plate-left{display:flex; align-items:center; gap:12px;}
+  .plate-badge{width:44px;height:44px;border-radius:8px; background:var(--accent); display:flex;align-items:center;justify-content:center; font-family:'Oswald',sans-serif; font-weight:700; color:#1B1E22; font-size:15px; flex-shrink:0;}
+  .plate-title{font-family:'Oswald',sans-serif; font-weight:600; letter-spacing:.04em; color:#F4F5F6; font-size:22px; line-height:1.1; text-transform:uppercase;}
+  .plate-sub{font-family:'JetBrains Mono',monospace; color:#9AA2AC; font-size:12px; margin-top:4px; letter-spacing:.03em;}
+  .plate-date{font-family:'JetBrains Mono',monospace; color:#F4F5F6; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); padding:8px 12px; border-radius:8px; font-size:13px; text-align:right; white-space:nowrap;}
+
+  .mode-switch{display:flex; gap:6px; margin:18px 0 16px; background:var(--surface-2); padding:4px; border-radius:10px; border:1px solid var(--line);}
+  .mode-btn{flex:1; border:none; background:transparent; padding:11px 8px; font-family:'Oswald',sans-serif; font-weight:600; font-size:13.5px; letter-spacing:.03em; text-transform:uppercase; color:var(--ink-soft); border-radius:7px; cursor:pointer; transition:background .15s, color .15s;}
+  .mode-btn.active{background:var(--surface); color:var(--ink); box-shadow:var(--shadow);}
+  .mode-btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  .tabs{display:flex; gap:6px; margin:0 0 16px; background:var(--surface-2); padding:4px; border-radius:10px; border:1px solid var(--line); overflow-x:auto;}
+  .tab-btn{flex:1; border:none; background:transparent; padding:10px 8px; font-family:'Inter',sans-serif; font-weight:600; font-size:12.5px; color:var(--ink-soft); border-radius:7px; cursor:pointer; white-space:nowrap; transition:background .15s, color .15s;}
+  .tab-btn.active{background:var(--surface); color:var(--ink); box-shadow:var(--shadow);}
+  .tab-btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  .view{display:none;} .view.active{display:block;}
+  .panel{display:none;} .panel.active{display:block;}
+
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow); margin-bottom:14px;}
+  .row-between{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;}
+  .field-label{font-size:12px; font-weight:600; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px; display:block;}
+
+  input[type="date"], input[type="text"], input[type="number"], input[type="password"]{font-family:'Inter',sans-serif; border:1px solid var(--line); border-radius:8px; padding:9px 10px; font-size:14px; color:var(--ink); background:var(--surface); width:100%;}
+  input:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent);}
+
+  .btn{font-family:'Inter',sans-serif; font-weight:600; font-size:13.5px; border-radius:8px; padding:10px 16px; cursor:pointer; border:1px solid transparent;}
+  .btn-primary{background:var(--accent); color:#1B1E22; border-color:#c95400;}
+  .btn-primary:hover{filter:brightness(1.05);}
+  .btn-block{width:100%;}
+  .btn-ghost{background:var(--surface); color:var(--ink); border-color:var(--line);}
+  .btn-ghost:hover{background:var(--surface-2);}
+  .btn-danger{background:#FFF0F0; color:var(--alpa); border-color:#F3C2C2;}
+  .btn-sm{padding:7px 10px; font-size:12.5px;}
+  .btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+
+  .summary{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;}
+  .chip{flex:1; min-width:70px; background:var(--surface); border:1px solid var(--line); border-radius:9px; padding:10px 12px; text-align:center;}
+  .chip .num{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:20px;}
+  .chip .lbl{font-size:10.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em; margin-top:2px;}
+  .chip.h .num{color:var(--present);} .chip.s .num{color:var(--sick);} .chip.i .num{color:var(--izin);} .chip.a .num{color:var(--alpa);} .chip.p .num{color:var(--pending);}
+
+  .roster-row{padding:11px 4px; border-bottom:1px solid var(--line);}
+  .roster-row:last-child{border-bottom:none;}
+  .roster-main{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .stu-info{display:flex; flex-direction:column; min-width:0;}
+  .stu-name{font-weight:600; font-size:14.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .stu-nis{font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--ink-soft);}
+  .pending-badge{display:inline-flex; align-items:center; gap:5px; margin-top:6px; font-size:11.5px; color:var(--pending); background:#F5EEFC; border:1px solid #E4D3F7; padding:4px 8px; border-radius:6px; width:fit-content;}
+  .thumb-btn{border:none; background:none; padding:0; cursor:pointer; display:block; margin-top:6px;}
+  .thumb-btn img{width:44px; height:44px; object-fit:cover; border-radius:6px; border:1px solid var(--line);}
+
+  .rocker{display:flex; background:#E4E6E9; border-radius:8px; padding:3px; border:1px solid var(--line); box-shadow:inset 0 1px 3px rgba(0,0,0,.08); flex-shrink:0;}
+  .rocker button{width:32px; height:30px; border:none; background:transparent; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12px; color:var(--ink-soft); border-radius:6px; cursor:pointer; transition:background .12s, color .12s;}
+  .rocker button:focus-visible{outline:2px solid var(--accent); outline-offset:1px;}
+  .rocker button.on.h{background:var(--present); color:#fff;} .rocker button.on.s{background:var(--sick); color:#fff;} .rocker button.on.i{background:var(--izin); color:#fff;} .rocker button.on.a{background:var(--alpa); color:#fff;}
+
+  .empty{text-align:center; padding:34px 10px; color:var(--ink-soft); font-size:13.5px;}
+  .empty b{display:block; color:var(--ink); font-family:'Oswald',sans-serif; font-size:16px; margin-bottom:4px; text-transform:uppercase; letter-spacing:.03em;}
+
+  .add-form{display:flex; gap:8px; flex-wrap:wrap;}
+  .add-form input{flex:1; min-width:120px;}
+  .manage-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 4px; border-bottom:1px solid var(--line);}
+  .manage-row:last-child{border-bottom:none;}
+
+  table.recap{width:100%; border-collapse:collapse; font-size:13px;}
+  table.recap th, table.recap td{padding:8px 6px; text-align:left; border-bottom:1px solid var(--line);}
+  table.recap th{font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft);}
+  table.recap td.num{font-family:'JetBrains Mono',monospace; text-align:center;}
+  table.recap tr:last-child td{border-bottom:none;}
+
+  .toast{position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:#1B1E22; color:#F4F5F6; padding:9px 16px; border-radius:8px; font-size:13px; box-shadow:var(--shadow); opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; z-index:60; max-width:90vw; text-align:center;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(-4px);}
+  .note{font-size:12px; color:var(--ink-soft); margin-top:6px; line-height:1.5;}
+
+  /* Student check-in */
+  .greet{text-align:center; padding:6px 0 14px;}
+  .greet .hi{font-size:12px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em;}
+  .greet .nm{font-family:'Oswald',sans-serif; font-size:22px; font-weight:600; margin-top:2px;}
+  .cam-wrap{position:relative; width:100%; aspect-ratio:3/4; max-width:320px; margin:0 auto; border-radius:12px; overflow:hidden; background:#111; border:2px solid #1B1E22;}
+  .cam-wrap video, .cam-wrap img{width:100%; height:100%; object-fit:cover; display:block;}
+  .cam-actions{display:flex; gap:8px; justify-content:center; margin-top:14px;}
+  .status-box{border-radius:10px; padding:14px 16px; margin-bottom:14px; font-size:13.5px; line-height:1.5;}
+  .status-box.ok{background:#EAF7ED; border:1px solid #BEE6C6; color:#1E7A32;}
+  .status-box.warn{background:#FDF1E5; border:1px solid #F6D6A8; color:#9A5B00;}
+  .status-box.err{background:#FDEAEA; border:1px solid #F3C2C2; color:#B42121;}
+  .status-box.info{background:#EEF2FF; border:1px solid #C9D4F7; color:#33449C;}
+  .spin{display:inline-block; width:14px; height:14px; border:2px solid rgba(0,0,0,.15); border-top-color:currentColor; border-radius:50%; animation:sp .7s linear infinite; vertical-align:-2px; margin-right:6px;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+
+  /* PIN */
+  .pin-boxes{display:flex; gap:8px; justify-content:center; margin:14px 0;}
+  .pin-boxes input{width:46px; height:52px; text-align:center; font-size:20px; font-family:'JetBrains Mono',monospace;}
+
+  /* Lightbox */
+  .lightbox{position:fixed; inset:0; background:rgba(15,17,19,.86); display:none; align-items:center; justify-content:center; z-index:70; padding:24px;}
+  .lightbox.show{display:flex;}
+  .lightbox img{max-width:100%; max-height:80vh; border-radius:10px; box-shadow:0 10px 40px rgba(0,0,0,.4);}
+  .lightbox .lb-close{position:absolute; top:18px; right:18px; background:rgba(255,255,255,.12); color:#fff; border:none; width:36px; height:36px; border-radius:8px; font-size:16px; cursor:pointer;}
+  .lightbox .lb-meta{color:#E7E9EC; font-size:12.5px; margin-top:10px; text-align:center; font-family:'JetBrains Mono',monospace;}
+
+  @media (max-width:420px){
+    .plate-title{font-size:18px;}
+    .plate{flex-direction:column; align-items:flex-start;}
+    .plate-date{align-self:stretch; text-align:left;}
+  }
+</style>
+
+<div id="absensi-root">
+  <div class="wrap wide">
+    <div class="plate">
+      <div class="plate-left">
+        <div class="plate-badge">TKR</div>
+        <div>
+          <div class="plate-title">X TKR 2</div>
+          <div class="plate-sub">Absensi Siswa &middot; Bengkel Kelas</div>
+        </div>
+      </div>
+      <div class="plate-date mono" id="clockDate">--</div>
+    </div>
+
+    <div class="mode-switch">
+      <button class="mode-btn active" data-mode="siswa">Mode Siswa</button>
+      <button class="mode-btn" data-mode="guru">Mode Guru</button>
+    </div>
+
+    <!-- ===================== MODE SISWA ===================== -->
+    <div class="view active" id="view-siswa">
+      <div class="wrap" style="max-width:420px; margin:0 auto;">
+        <div class="card" id="nisCard">
+          <span class="field-label">Masukkan NIS</span>
+          <div class="add-form">
+            <input type="text" id="nisInput" inputmode="numeric" placeholder="Contoh: 24101">
+            <button class="btn btn-primary" id="nisSubmit">Cek</button>
+          </div>
+          <div class="note">Ketik NIS kamu, sistem akan mencocokkan nama secara otomatis.</div>
+        </div>
+
+        <div id="checkinArea"></div>
+      </div>
+    </div>
+
+    <!-- ===================== MODE GURU ===================== -->
+    <div class="view" id="view-guru">
+      <div class="wrap" style="max-width:380px; margin:0 auto;" id="pinScreen">
+        <div class="card" style="text-align:center;">
+          <span class="field-label">PIN Guru</span>
+          <div class="pin-boxes">
+            <input type="password" maxlength="1" class="pin-d" inputmode="numeric">
+            <input type="password" maxlength="1" class="pin-d" inputmode="numeric">
+            <input type="password" maxlength="1" class="pin-d" inputmode="numeric">
+            <input type="password" maxlength="1" class="pin-d" inputmode="numeric">
+          </div>
+          <button class="btn btn-primary btn-block" id="pinSubmit">Masuk</button>
+          <div class="note">PIN default: 1234 (ubah di tab Pengaturan setelah masuk).</div>
+        </div>
+      </div>
+
+      <div class="wrap wide" id="guruContent" style="display:none; margin:0 auto;">
+        <div class="row-between" style="margin-bottom:12px;">
+          <div class="note" style="margin:0;">Masuk sebagai guru/wali kelas</div>
+          <button class="btn btn-ghost btn-sm" id="logoutBtn">Keluar Mode Guru</button>
+        </div>
+
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="absen">Absensi</button>
+          <button class="tab-btn" data-tab="siswa">Kelola Siswa</button>
+          <button class="tab-btn" data-tab="rekap">Rekap</button>
+          <button class="tab-btn" data-tab="setting">Pengaturan</button>
+        </div>
+
+        <div class="panel active" id="panel-absen">
+          <div class="card">
+            <div class="row-between">
+              <div><span class="field-label">Tanggal</span><input type="date" id="dateInput"></div>
+              <button class="btn btn-ghost" id="markAllHadir">Tandai Sisanya Hadir</button>
+            </div>
+          </div>
+          <div class="summary" id="summaryStrip"></div>
+          <div class="card" id="rosterCard"><div id="rosterList"></div></div>
+        </div>
+
+        <div class="panel" id="panel-siswa">
+          <div class="card">
+            <span class="field-label">Tambah Siswa</span>
+            <div class="add-form">
+              <input type="text" id="newNis" placeholder="NIS" style="max-width:130px;">
+              <input type="text" id="newName" placeholder="Nama lengkap siswa">
+              <button class="btn btn-primary" id="addStudentBtn">Tambah</button>
+            </div>
+            <div class="note">NIS wajib diisi dan harus unik, karena dipakai siswa untuk check-in.</div>
+          </div>
+          <div class="card"><div id="manageList"></div></div>
+        </div>
+
+        <div class="panel" id="panel-rekap">
+          <div class="card row-between">
+            <div><span class="field-label">Rekap Keseluruhan</span><div class="note" id="rekapRange">Belum ada data</div></div>
+            <button class="btn btn-ghost" id="exportCsvBtn">Unduh CSV</button>
+          </div>
+          <div class="card"><div id="rekapTableWrap"></div></div>
+        </div>
+
+        <div class="panel" id="panel-setting">
+          <div class="card">
+            <span class="field-label">Titik Lokasi Sekolah</span>
+            <div class="row-between" style="gap:8px; margin-bottom:10px;">
+              <div style="flex:1;"><div class="note" style="margin:0 0 4px;">Lintang (lat)</div><input type="text" id="schoolLat" placeholder="-6.200000"></div>
+              <div style="flex:1;"><div class="note" style="margin:0 0 4px;">Bujur (lng)</div><input type="text" id="schoolLng" placeholder="106.816666"></div>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="useCurrentLoc">Gunakan Lokasi Saya Sekarang</button>
+            <div style="margin-top:12px;">
+              <div class="note" style="margin:0 0 4px;">Radius toleransi (meter)</div>
+              <input type="number" id="radiusInput" min="10" step="10" value="200">
+            </div>
+            <button class="btn btn-primary" id="saveConfigBtn" style="margin-top:12px;">Simpan Pengaturan Lokasi</button>
+            <div class="note" id="configStatus"></div>
+          </div>
+          <div class="card">
+            <span class="field-label">Ubah PIN Guru</span>
+            <div class="add-form">
+              <input type="text" id="newPin" placeholder="PIN baru (4 digit)" maxlength="4" style="max-width:160px;">
+              <button class="btn btn-ghost" id="savePinBtn">Simpan PIN</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="toast" id="toast"></div>
+  <div class="lightbox" id="lightbox">
+    <button class="lb-close" id="lbClose">&times;</button>
+    <div><img id="lbImg" src=""><div class="lb-meta" id="lbMeta"></div></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const root = document.getElementById('absensi-root');
+  const $ = (sel, ctx) => (ctx||root).querySelector(sel);
+  const $$ = (sel, ctx) => Array.from((ctx||root).querySelectorAll(sel));
+
+  const STATUS = ['H','S','I','A'];
+  const STATUS_LABEL = {H:'Hadir', S:'Sakit', I:'Izin', A:'Alpa'};
+  const STATUS_CLASS = {H:'h', S:'s', I:'i', A:'a'};
+
+  let students = [];
+  let config = { schoolLat:null, schoolLng:null, radius:200, pin:'1234' };
+  let guruAuthed = false;
+  let currentDate = todayStr();
+  let currentAttendance = {};
+  let cameraStream = null;
+  let capturedPhotoData = null;
+  let matchedStudent = null;
+
+  function todayStr(){
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  function nowTime(){
+    const d = new Date();
+    return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  }
+  function fmtDateLong(dstr){
+    return new Date(dstr + 'T00:00:00').toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  }
+  function showToast(msg){
+    const t = $('#toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(showToast._tm);
+    showToast._tm = setTimeout(()=>t.classList.remove('show'), 2200);
+  }
+  function uid(){ return 'stu_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7); }
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  }
+  function haversine(lat1, lon1, lat2, lon2){
+    const R = 6371000;
+    const toRad = x => x * Math.PI / 180;
+    const dLat = toRad(lat2-lat1), dLon = toRad(lon2-lon1);
+    const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  // ---------- Storage ----------
+  async function loadStudents(){
+    try{ const r = await window.storage.get('students', true); students = r && r.value ? JSON.parse(r.value) : []; }
+    catch(e){ students = []; }
+  }
+  async function saveStudents(){
+    try{ const r = await window.storage.set('students', JSON.stringify(students), true); if(!r) showToast('Gagal menyimpan data siswa'); }
+    catch(e){ showToast('Gagal menyimpan data siswa'); }
+  }
+  async function loadConfig(){
+    try{
+      const r = await window.storage.get('config', true);
+      if(r && r.value){ config = Object.assign(config, JSON.parse(r.value)); }
+      else { await window.storage.set('config', JSON.stringify(config), true); }
+    }catch(e){ /* keep defaults */ }
+  }
+  async function saveConfig(){
+    try{ const r = await window.storage.set('config', JSON.stringify(config), true); if(!r) showToast('Gagal menyimpan pengaturan'); }
+    catch(e){ showToast('Gagal menyimpan pengaturan'); }
+  }
+  async function loadAttendance(dateStr){
+    try{ const r = await window.storage.get('attendance:' + dateStr, true); return r && r.value ? JSON.parse(r.value) : {}; }
+    catch(e){ return {}; }
+  }
+  async function saveAttendance(dateStr, data){
+    try{ const r = await window.storage.set('attendance:' + dateStr, JSON.stringify(data), true); if(!r) showToast('Gagal menyimpan absensi'); }
+    catch(e){ showToast('Gagal menyimpan absensi'); }
+  }
+  async function listAllAttendanceKeys(){
+    try{ const r = await window.storage.list('attendance:', true); return r && r.keys ? r.keys : []; }
+    catch(e){ return []; }
+  }
+  async function saveSelfie(dateStr, studentId, dataUrl){
+    try{ await window.storage.set('selfie:' + dateStr + ':' + studentId, dataUrl, true); }
+    catch(e){ /* non-fatal */ }
+  }
+  async function loadSelfie(dateStr, studentId){
+    try{ const r = await window.storage.get('selfie:' + dateStr + ':' + studentId, true); return r ? r.value : null; }
+    catch(e){ return null; }
+  }
+
+  // ---------- Mode switch ----------
+  $$('.mode-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      $$('.mode-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      $$('.view').forEach(v=>v.classList.remove('active'));
+      $('#view-' + btn.dataset.mode).classList.add('active');
+      stopCamera();
+    });
+  });
+
+  // ================= MODE SISWA =================
+  $('#nisSubmit').addEventListener('click', handleNisSubmit);
+  $('#nisInput').addEventListener('keydown', e=>{ if(e.key==='Enter') handleNisSubmit(); });
+
+  async function handleNisSubmit(){
+    const nis = $('#nisInput').value.trim();
+    if(!nis){ showToast('Masukkan NIS dulu'); return; }
+    const found = students.find(s => s.nis && s.nis.toLowerCase() === nis.toLowerCase());
+    if(!found){
+      $('#checkinArea').innerHTML = `<div class="status-box err">NIS "${escapeHtml(nis)}" tidak ditemukan di daftar kelas. Cek kembali atau hubungi guru.</div>`;
+      return;
+    }
+    matchedStudent = found;
+    await renderCheckin();
+  }
+
+  async function renderCheckin(){
+    const area = $('#checkinArea');
+    area.innerHTML = `<div class="empty">Memeriksa status absen...</div>`;
+    const today = todayStr();
+    const att = await loadAttendance(today);
+    const rec = att[matchedStudent.id];
+
+    if(rec && rec.status){
+      const lbl = STATUS_LABEL[rec.status] || rec.status;
+      area.innerHTML = `
+        <div class="greet"><div class="hi">Halo</div><div class="nm">${escapeHtml(matchedStudent.name)}</div></div>
+        <div class="status-box ok">Kamu sudah tercatat <b>${lbl}</b> hari ini pukul ${rec.time || '-'}.</div>
+      `;
+      return;
+    }
+    if(rec && rec.pending){
+      area.innerHTML = `
+        <div class="greet"><div class="hi">Halo</div><div class="nm">${escapeHtml(matchedStudent.name)}</div></div>
+        <div class="status-box warn">Absen kamu (pukul ${rec.time || '-'}) tercatat di luar radius sekolah (&plusmn;${Math.round(rec.distance)} m) dan sedang menunggu verifikasi guru.</div>
+      `;
+      return;
+    }
+
+    area.innerHTML = `
+      <div class="greet"><div class="hi">Halo</div><div class="nm">${escapeHtml(matchedStudent.name)}</div></div>
+      <div class="note" style="text-align:center; margin-bottom:12px;">Ambil selfie untuk absen hari ini. Pastikan izin kamera & lokasi diaktifkan di browser.</div>
+      <div class="cam-wrap" id="camWrap">
+        <video id="camVideo" autoplay playsinline muted></video>
+      </div>
+      <div class="cam-actions">
+        <button class="btn btn-primary" id="startCamBtn">Buka Kamera</button>
+      </div>
+      <div id="camStatus"></div>
+    `;
+    $('#startCamBtn').addEventListener('click', startCamera);
+  }
+
+  async function startCamera(){
+    const camStatus = $('#camStatus');
+    try{
+      cameraStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user' }, audio:false });
+      const video = $('#camVideo');
+      video.srcObject = cameraStream;
+      $('.cam-actions').innerHTML = `<button class="btn btn-primary" id="snapBtn">Ambil Foto</button>`;
+      $('#snapBtn').addEventListener('click', capturePhoto);
+      camStatus.innerHTML = '';
+    }catch(e){
+      camStatus.innerHTML = `<div class="status-box err" style="margin-top:12px;">Tidak bisa mengakses kamera (${e.name || 'error'}). Pastikan kamu membuka link ini langsung di browser dan mengizinkan akses kamera, lalu coba lagi.</div>`;
+    }
+  }
+
+  function capturePhoto(){
+    const video = $('#camVideo');
+    const canvas = document.createElement('canvas');
+    canvas.width = 320; canvas.height = 240;
+    const ctx = canvas.getContext('2d');
+    const vw = video.videoWidth || 320, vh = video.videoHeight || 240;
+    const scale = Math.max(320/vw, 240/vh);
+    const sw = 320/scale, sh = 240/scale;
+    const sx = (vw-sw)/2, sy = (vh-sh)/2;
+    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, 320, 240);
+    capturedPhotoData = canvas.toDataURL('image/jpeg', 0.55);
+    stopCamera();
+
+    $('#camWrap').innerHTML = `<img src="${capturedPhotoData}" alt="Foto selfie">`;
+    $('.cam-actions').innerHTML = `
+      <button class="btn btn-ghost" id="retakeBtn">Ambil Ulang</button>
+      <button class="btn btn-primary" id="submitCheckinBtn">Kirim Absen</button>
+    `;
+    $('#retakeBtn').addEventListener('click', renderCheckin);
+    $('#submitCheckinBtn').addEventListener('click', submitCheckin);
+  }
+
+  function stopCamera(){
+    if(cameraStream){ cameraStream.getTracks().forEach(t=>t.stop()); cameraStream = null; }
+  }
+
+  async function submitCheckin(){
+    const camStatus = $('#camStatus');
+    $('.cam-actions').innerHTML = `<button class="btn btn-ghost" disabled><span class="spin"></span>Mengambil lokasi...</button>`;
+    camStatus.innerHTML = '';
+
+    let coords = null;
+    try{
+      coords = await new Promise((resolve, reject)=>{
+        if(!navigator.geolocation){ reject(new Error('no-geo')); return; }
+        navigator.geolocation.getCurrentPosition(
+          pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          err => reject(err),
+          { enableHighAccuracy:true, timeout:12000, maximumAge:0 }
+        );
+      });
+    }catch(e){
+      camStatus.innerHTML = `<div class="status-box err" style="margin-top:12px;">Tidak bisa mengambil lokasi. Pastikan izin lokasi diaktifkan, lalu coba lagi.</div>`;
+      $('.cam-actions').innerHTML = `<button class="btn btn-ghost" id="retakeBtn2">Ambil Ulang</button><button class="btn btn-primary" id="retrySubmit">Coba Lagi</button>`;
+      $('#retakeBtn2').addEventListener('click', renderCheckin);
+      $('#retrySubmit').addEventListener('click', submitCheckin);
+      return;
+    }
+
+    const today = todayStr();
+    const att = await loadAttendance(today);
+    let record;
+
+    if(config.schoolLat != null && config.schoolLng != null && !isNaN(parseFloat(config.schoolLat))){
+      const dist = haversine(coords.lat, coords.lng, parseFloat(config.schoolLat), parseFloat(config.schoolLng));
+      const within = dist <= (config.radius || 200);
+      if(within){
+        record = { status:'H', time: nowTime(), distance: dist, withinRadius:true, pending:false, selfCheckin:true, lat:coords.lat, lng:coords.lng };
+      } else {
+        record = { time: nowTime(), distance: dist, withinRadius:false, pending:true, selfCheckin:true, lat:coords.lat, lng:coords.lng };
+      }
+      att[matchedStudent.id] = record;
+      await saveAttendance(today, att);
+      await saveSelfie(today, matchedStudent.id, capturedPhotoData);
+
+      if(within){
+        $('#checkinArea').innerHTML = `
+          <div class="greet"><div class="hi">Halo</div><div class="nm">${escapeHtml(matchedStudent.name)}</div></div>
+          <div class="status-box ok">Absen berhasil! Kamu tercatat <b>Hadir</b> pukul ${record.time} (&plusmn;${Math.round(dist)} m dari sekolah).</div>
+        `;
+        showToast('Absen tersimpan');
+      } else {
+        $('#checkinArea').innerHTML = `
+          <div class="greet"><div class="hi">Halo</div><div class="nm">${escapeHtml(matchedStudent.name)}</div></div>
+          <div class="status-box warn">Lokasi kamu &plusmn;${Math.round(dist)} m dari sekolah (di luar radius ${config.radius} m). Absen tercatat sebagai <b>menunggu verifikasi guru</b>.</div>
+        `;
+        showToast('Absen menunggu verifikasi');
+      }
+    } else {
+      record = { status:'H', time: nowTime(), distance:null, withinRadius:null, pending:false, selfCheckin:true, lat:coords.lat, lng:coords.lng };
+      att[matchedStudent.id] = record;
+      await saveAttendance(today, att);
+      await saveSelfie(today, matchedStudent.id, capturedPhotoData);
+      $('#checkinArea').innerHTML = `
+        <div class="greet"><div class="hi">Halo</div><div class="nm">${escapeHtml(matchedStudent.name)}</div></div>
+        <div class="status-box ok">Absen berhasil! Tercatat <b>Hadir</b> pukul ${record.time}.</div>
+        <div class="status-box info">Lokasi sekolah belum diatur guru, jadi absen langsung dicatat tanpa cek radius.</div>
+      `;
+      showToast('Absen tersimpan');
+    }
+  }
+
+  // ================= MODE GURU =================
+  function collectPin(){ return $$('.pin-d').map(i=>i.value).join(''); }
+  $$('.pin-d').forEach((inp, idx)=>{
+    inp.addEventListener('input', ()=>{
+      if(inp.value && idx < 3) $$('.pin-d')[idx+1].focus();
+    });
+    inp.addEventListener('keydown', e=>{
+      if(e.key === 'Backspace' && !inp.value && idx > 0) $$('.pin-d')[idx-1].focus();
+      if(e.key === 'Enter') $('#pinSubmit').click();
+    });
+  });
+  $('#pinSubmit').addEventListener('click', ()=>{
+    const entered = collectPin();
+    if(entered.length < 4){ showToast('Masukkan 4 digit PIN'); return; }
+    if(entered === config.pin){
+      guruAuthed = true;
+      $('#pinScreen').style.display = 'none';
+      $('#guruContent').style.display = 'block';
+      $$('.pin-d').forEach(i=>i.value='');
+      initGuruContent();
+    } else {
+      showToast('PIN salah');
+      $$('.pin-d').forEach(i=>i.value='');
+      $$('.pin-d')[0].focus();
+    }
+  });
+  $('#logoutBtn').addEventListener('click', ()=>{
+    guruAuthed = false;
+    $('#guruContent').style.display = 'none';
+    $('#pinScreen').style.display = 'block';
+  });
+
+  let guruInited = false;
+  function initGuruContent(){
+    if(guruInited) return;
+    guruInited = true;
+    $('#dateInput').value = currentDate;
+    refreshAttendanceForDate();
+    renderManageList();
+    $('#schoolLat').value = config.schoolLat != null ? config.schoolLat : '';
+    $('#schoolLng').value = config.schoolLng != null ? config.schoolLng : '';
+    $('#radiusInput').value = config.radius || 200;
+  }
+
+  $$('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      $$('.tab-btn').forEach(b=>b.classList.remove('active'));
+      $$('.panel').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      $('#panel-' + btn.dataset.tab).classList.add('active');
+      if(btn.dataset.tab === 'rekap') renderRekap();
+    });
+  });
+
+  const dateInput = $('#dateInput');
+  dateInput.addEventListener('change', async ()=>{
+    currentDate = dateInput.value || todayStr();
+    await refreshAttendanceForDate();
+  });
+
+  async function refreshAttendanceForDate(){
+    currentAttendance = await loadAttendance(currentDate);
+    await renderRoster();
+  }
+
+  function computeCounts(att){
+    const c = {H:0,S:0,I:0,A:0,P:0};
+    students.forEach(s=>{
+      const r = att[s.id];
+      if(r && r.pending) c.P++;
+      else if(r && r.status && c.hasOwnProperty(r.status)) c[r.status]++;
+    });
+    return c;
+  }
+
+  function renderSummary(){
+    const c = computeCounts(currentAttendance);
+    const done = c.H+c.S+c.I+c.A+c.P;
+    const belum = students.length - done;
+    $('#summaryStrip').innerHTML = `
+      <div class="chip h"><div class="num">${c.H}</div><div class="lbl">Hadir</div></div>
+      <div class="chip s"><div class="num">${c.S}</div><div class="lbl">Sakit</div></div>
+      <div class="chip i"><div class="num">${c.I}</div><div class="lbl">Izin</div></div>
+      <div class="chip a"><div class="num">${c.A}</div><div class="lbl">Alpa</div></div>
+      <div class="chip p"><div class="num">${c.P}</div><div class="lbl">Verifikasi</div></div>
+      <div class="chip"><div class="num">${belum}</div><div class="lbl">Belum</div></div>
+    `;
+  }
+
+  async function renderRoster(){
+    renderSummary();
+    const list = $('#rosterList');
+    if(students.length === 0){
+      list.innerHTML = `<div class="empty"><b>Belum ada siswa</b>Tambahkan daftar siswa di tab "Kelola Siswa".</div>`;
+      return;
+    }
+    const rows = await Promise.all(students.map(async s=>{
+      const rec = currentAttendance[s.id];
+      const st = rec && rec.status ? rec.status : '';
+      const buttons = STATUS.map(code=>{
+        const on = st === code ? 'on ' + STATUS_CLASS[code] : '';
+        return `<button data-stu="${s.id}" data-status="${code}" class="${on}" title="${STATUS_LABEL[code]}">${code}</button>`;
+      }).join('');
+      let extra = '';
+      if(rec && rec.pending){
+        extra += `<div class="pending-badge">Menunggu verifikasi &middot; &plusmn;${Math.round(rec.distance)} m &middot; ${rec.time||''}</div>`;
+      } else if(rec && rec.selfCheckin){
+        extra += `<div class="note" style="margin:6px 0 0;">Check-in mandiri pukul ${rec.time||''}${rec.distance!=null ? ' &middot; &plusmn;'+Math.round(rec.distance)+' m' : ''}</div>`;
+      }
+      const hasSelfie = rec && rec.selfCheckin;
+      const thumb = hasSelfie ? `<button class="thumb-btn" data-view-photo="${s.id}"><img data-thumb="${s.id}" alt="Foto ${escapeHtml(s.name)}"></button>` : '';
+      return `
+        <div class="roster-row">
+          <div class="roster-main">
+            <div class="stu-info">
+              <span class="stu-name">${escapeHtml(s.name)}</span>
+              ${s.nis ? `<span class="stu-nis">NIS ${escapeHtml(s.nis)}</span>` : ''}
+              ${extra}
+            </div>
+            <div class="rocker">${buttons}</div>
+          </div>
+          ${thumb}
+        </div>
+      `;
+    }));
+    list.innerHTML = rows.join('');
+
+    students.forEach(async s=>{
+      const rec = currentAttendance[s.id];
+      if(rec && rec.selfCheckin){
+        const img = list.querySelector(`img[data-thumb="${s.id}"]`);
+        if(img){
+          const data = await loadSelfie(currentDate, s.id);
+          if(data) img.src = data;
+        }
+      }
+    });
+  }
+
+  $('#rosterList').addEventListener('click', async (e)=>{
+    const photoBtn = e.target.closest('button[data-view-photo]');
+    if(photoBtn){
+      const sid = photoBtn.dataset.viewPhoto;
+      const s = students.find(x=>x.id===sid);
+      const data = await loadSelfie(currentDate, sid);
+      if(data){
+        $('#lbImg').src = data;
+        const rec = currentAttendance[sid] || {};
+        $('#lbMeta').textContent = `${s ? s.name : ''} · ${currentDate} ${rec.time||''}${rec.distance!=null ? ' · ±'+Math.round(rec.distance)+' m' : ''}`;
+        $('#lightbox').classList.add('show');
+      }
+      return;
+    }
+    const btn = e.target.closest('button[data-stu]');
+    if(!btn) return;
+    const stuId = btn.dataset.stu;
+    const status = btn.dataset.status;
+    const existing = currentAttendance[stuId];
+    if(existing && existing.status === status){
+      delete currentAttendance[stuId];
+    } else {
+      const prev = currentAttendance[stuId] || {};
+      currentAttendance[stuId] = { status, time: prev.time || nowTime(), distance: prev.distance != null ? prev.distance : null, withinRadius: prev.withinRadius != null ? prev.withinRadius : null, pending:false, selfCheckin: prev.selfCheckin || false, lat: prev.lat, lng: prev.lng };
+    }
+    await renderRoster();
+    await saveAttendance(currentDate, currentAttendance);
+  });
+
+  $('#lbClose').addEventListener('click', ()=> $('#lightbox').classList.remove('show'));
+  $('#lightbox').addEventListener('click', e=>{ if(e.target.id === 'lightbox') $('#lightbox').classList.remove('show'); });
+
+  $('#markAllHadir').addEventListener('click', async ()=>{
+    if(students.length === 0) return;
+    students.forEach(s=>{
+      if(!currentAttendance[s.id] || !currentAttendance[s.id].status){
+        currentAttendance[s.id] = { status:'H', time: nowTime(), distance:null, withinRadius:null, pending:false, selfCheckin:false };
+      }
+    });
+    await renderRoster();
+    await saveAttendance(currentDate, currentAttendance);
+    showToast('Siswa tanpa catatan ditandai Hadir');
+  });
+
+  // Kelola siswa
+  function renderManageList(){
+    const wrap = $('#manageList');
+    if(students.length === 0){
+      wrap.innerHTML = `<div class="empty"><b>Daftar kosong</b>Tambahkan siswa pertama menggunakan formulir di atas.</div>`;
+      return;
+    }
+    wrap.innerHTML = students.map(s=>`
+      <div class="manage-row">
+        <div class="stu-info"><span class="stu-name">${escapeHtml(s.name)}</span>${s.nis ? `<span class="stu-nis">NIS ${escapeHtml(s.nis)}</span>` : ''}</div>
+        <button class="btn btn-danger btn-sm" data-del="${s.id}">Hapus</button>
+      </div>
+    `).join('');
+  }
+
+  $('#addStudentBtn').addEventListener('click', async ()=>{
+    const nameInput = $('#newName'), nisInput = $('#newNis');
+    const name = nameInput.value.trim(), nis = nisInput.value.trim();
+    if(!name){ showToast('Nama siswa wajib diisi'); nameInput.focus(); return; }
+    if(!nis){ showToast('NIS wajib diisi'); nisInput.focus(); return; }
+    if(students.some(s => s.nis && s.nis.toLowerCase() === nis.toLowerCase())){
+      showToast('NIS sudah dipakai siswa lain'); nisInput.focus(); return;
+    }
+    students.push({ id: uid(), name, nis });
+    nameInput.value = ''; nisInput.value = '';
+    await saveStudents();
+    renderManageList();
+    showToast('Siswa ditambahkan');
+    nisInput.focus();
+  });
+  $('#newName').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#addStudentBtn').click(); });
+
+  $('#manageList').addEventListener('click', async (e)=>{
+    const btn = e.target.closest('button[data-del]');
+    if(!btn) return;
+    const id = btn.dataset.del;
+    const s = students.find(x=>x.id===id);
+    if(!confirm(`Hapus ${s ? s.name : 'siswa ini'} dari daftar? Riwayat absensinya tetap tersimpan.`)) return;
+    students = students.filter(x=>x.id!==id);
+    await saveStudents();
+    renderManageList();
+    showToast('Siswa dihapus');
+  });
+
+  // Pengaturan
+  $('#useCurrentLoc').addEventListener('click', ()=>{
+    if(!navigator.geolocation){ showToast('Geolokasi tidak didukung browser ini'); return; }
+    $('#useCurrentLoc').disabled = true;
+    $('#useCurrentLoc').textContent = 'Mengambil lokasi...';
+    navigator.geolocation.getCurrentPosition(
+      pos=>{
+        $('#schoolLat').value = pos.coords.latitude.toFixed(6);
+        $('#schoolLng').value = pos.coords.longitude.toFixed(6);
+        $('#useCurrentLoc').disabled = false;
+        $('#useCurrentLoc').textContent = 'Gunakan Lokasi Saya Sekarang';
+        showToast('Lokasi saat ini diambil, jangan lupa Simpan');
+      },
+      err=>{
+        $('#useCurrentLoc').disabled = false;
+        $('#useCurrentLoc').textContent = 'Gunakan Lokasi Saya Sekarang';
+        showToast('Gagal mengambil lokasi');
+      },
+      { enableHighAccuracy:true, timeout:12000 }
+    );
+  });
+
+  $('#saveConfigBtn').addEventListener('click', async ()=>{
+    const lat = parseFloat($('#schoolLat').value);
+    const lng = parseFloat($('#schoolLng').value);
+    const radius = parseInt($('#radiusInput').value, 10);
+    if(isNaN(lat) || isNaN(lng)){ showToast('Lat/Lng belum valid'); return; }
+    config.schoolLat = lat; config.schoolLng = lng; config.radius = isNaN(radius) ? 200 : radius;
+    await saveConfig();
+    $('#configStatus').textContent = 'Tersimpan.';
+    showToast('Pengaturan lokasi tersimpan');
+  });
+
+  $('#savePinBtn').addEventListener('click', async ()=>{
+    const pin = $('#newPin').value.trim();
+    if(!/^\d{4}$/.test(pin)){ showToast('PIN harus 4 digit angka'); return; }
+    config.pin = pin;
+    await saveConfig();
+    $('#newPin').value = '';
+    showToast('PIN diperbarui');
+  });
+
+  // Rekap
+  async function renderRekap(){
+    const wrap = $('#rekapTableWrap');
+    wrap.innerHTML = `<div class="empty">Memuat rekap...</div>`;
+    const keys = await listAllAttendanceKeys();
+    if(keys.length === 0 || students.length === 0){
+      wrap.innerHTML = `<div class="empty"><b>Belum ada rekap</b>Isi absensi dulu di tab "Absensi".</div>`;
+      $('#rekapRange').textContent = 'Belum ada data';
+      return;
+    }
+    const dates = keys.map(k=>k.replace('attendance:','')).sort();
+    $('#rekapRange').innerHTML = `${dates.length} hari tercatat &middot; ${fmtDateLong(dates[0])} s.d. ${fmtDateLong(dates[dates.length-1])}`;
+
+    const totals = {};
+    students.forEach(s=>{ totals[s.id] = {H:0,S:0,I:0,A:0}; });
+    for(const dstr of dates){
+      const att = await loadAttendance(dstr);
+      Object.keys(att).forEach(stuId=>{
+        const r = att[stuId];
+        if(totals[stuId] && r && r.status && totals[stuId].hasOwnProperty(r.status)) totals[stuId][r.status]++;
+      });
+    }
+    const rows = students.map(s=>{
+      const t = totals[s.id];
+      return `<tr><td>${escapeHtml(s.name)}</td><td class="num" style="color:var(--present)">${t.H}</td><td class="num" style="color:var(--sick)">${t.S}</td><td class="num" style="color:var(--izin)">${t.I}</td><td class="num" style="color:var(--alpa)">${t.A}</td></tr>`;
+    }).join('');
+    wrap.innerHTML = `<table class="recap"><thead><tr><th>Nama</th><th class="num">H</th><th class="num">S</th><th class="num">I</th><th class="num">A</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  $('#exportCsvBtn').addEventListener('click', async ()=>{
+    const keys = await listAllAttendanceKeys();
+    if(keys.length === 0 || students.length === 0){ showToast('Belum ada data untuk diunduh'); return; }
+    const dates = keys.map(k=>k.replace('attendance:','')).sort();
+    const attByDate = {};
+    for(const d of dates){ attByDate[d] = await loadAttendance(d); }
+    let csv = 'Nama,NIS,' + dates.join(',') + '\n';
+    students.forEach(s=>{
+      const row = [csvEscape(s.name), csvEscape(s.nis||'')];
+      dates.forEach(d=>{ const r = attByDate[d][s.id]; row.push(r && r.status ? r.status : (r && r.pending ? 'Menunggu' : '')); });
+      csv += row.join(',') + '\n';
+    });
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `absensi_X_TKR_2_${todayStr()}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('CSV diunduh');
+  });
+  function csvEscape(v){
+    if(v == null) return '';
+    const s = String(v);
+    if(/[",\n]/.test(s)) return '"' + s.replace(/"/g,'""') + '"';
+    return s;
+  }
+
+  // ---------- Init ----------
+  async function init(){
+    $('#clockDate').textContent = fmtDateLong(todayStr());
+    $('#checkinArea').innerHTML = '';
+    await Promise.all([loadStudents(), loadConfig()]);
+  }
+  init();
+})();
+</script>
