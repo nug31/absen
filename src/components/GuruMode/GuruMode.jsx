@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '../UI/Card';
 import { Button } from '../UI/Button';
 import { useToast } from '../UI/Toast';
-import { storage } from '../../utils/storage';
+import { supabase } from '../../lib/supabase';
 
 // Panels
 import GuruPanelAbsen from './GuruPanelAbsen';
@@ -18,8 +18,9 @@ export default function GuruMode() {
   const showToast = useToast();
 
   useEffect(() => {
-    storage.get('config').then(cfgStr => {
-      const cfg = cfgStr ? JSON.parse(cfgStr) : { pin: '1234' };
+    supabase.from('config').select('key, value').then(({ data }) => {
+      const cfg = { pin: '1234' };
+      if (data) data.forEach(r => { cfg[r.key] = r.value; });
       setConfig(cfg);
     });
   }, []);

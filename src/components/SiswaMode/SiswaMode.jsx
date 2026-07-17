@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '../UI/Card';
 import { Button } from '../UI/Button';
 import { useToast } from '../UI/Toast';
-import { storage } from '../../utils/storage';
 import { haversine, getCurrentLocation } from '../../utils/geo';
+import { supabase } from '../../lib/supabase';
 import defaultStudents from '../../data/defaultStudents';
 
 export default function SiswaMode() {
@@ -11,11 +11,10 @@ export default function SiswaMode() {
   const [matchedStudent, setMatchedStudent] = useState(null);
   const [checkinState, setCheckinState] = useState('idle'); // idle, checking, checked-in, waiting-camera, camera-ready, uploading
   const [attendanceRecord, setAttendanceRecord] = useState(null);
-  const [config, setConfig] = useState({});
   const [cameraError, setCameraError] = useState('');
   const [cameraStream, setCameraStream] = useState(null);
   const [capturedPhoto, setCapturedPhoto] = useState(null);
-  
+
   const videoRef = useRef(null);
   const showToast = useToast();
 
@@ -39,10 +38,23 @@ export default function SiswaMode() {
       return;
     }
     try {
-      const r = await storage.get('students');
-      // Fallback ke defaultStudents jika localStorage kosong
-      const students = (r ? JSON.parse(r) : null) || defaultStudents;
-      const found = students.find(s => s.nis && s.nis.toLowerCase() === nis.trim().toLowerCase());
+      // Cari siswa dari Supabase
+      const { data, error } = await supabase
+        .from('students')
+        .select('*')
+        .ilike('nis', nis.trim())
+        .single();
+
+      let found = null;
+      if (!error && data) {
+        found = data;
+      } else {
+        // Fallback ke defaultStudents jika tabel kosong
+        found = defaultStudents.find(
+          s => s.nis && s.nis.toLowerCase() === nis.trim().toLowerCase()
+        );
+      }
+
       if (!found) {
         setCheckinState('not-found');
         return;
@@ -57,9 +69,13 @@ export default function SiswaMode() {
   const loadCheckinStatus = async (student) => {
     setCheckinState('checking');
     const today = todayStr();
-    const attStr = await storage.get('attendance:' + today);
-    const att = attStr ? JSON.parse(attStr) : {};
-    const rec = att[student.id];
+
+    const { data: rec } = await supabase
+      .from('attendance')
+      .select('*')
+      .eq('student_id', student.id)
+      .eq('date', today)
+      .single();
 
     if (rec && rec.status) {
       setAttendanceRecord(rec);
@@ -113,16 +129,43 @@ export default function SiswaMode() {
     }
   };
 
+  // Upload foto base64 ke Supabase Storage
+  const uploadSelfie = async (dataUrl, studentId, date) => {
+    try {
+      const base64 = dataUrl.split(',')[1];
+      const byteString = atob(base64);
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+      const blob = new Blob([ab], { type: 'image/jpeg' });
+
+      const filePath = `selfies/${date}/${studentId}.jpg`;
+      const { error } = await supabase.storage
+        .from('absenio')
+        .upload(filePath, blob, { upsert: true, contentType: 'image/jpeg' });
+
+      if (error) throw error;
+
+      const { data: urlData } = supabase.storage.from('absenio').getPublicUrl(filePath);
+      return urlData?.publicUrl || null;
+    } catch (e) {
+      console.warn('Upload selfie gagal, lanjut tanpa foto:', e.message);
+      return null;
+    }
+  };
+
   const submitCheckin = async () => {
     setCheckinState('uploading');
     setCameraError('');
 
+    // Ambil konfigurasi sekolah
     let cfg = {};
     try {
-      const cfgStr = await storage.get('config');
-      if (cfgStr) cfg = JSON.parse(cfgStr);
+      const { data: cfgRows } = await supabase.from('config').select('key, value');
+      if (cfgRows) cfgRows.forEach(r => { cfg[r.key] = r.value; });
     } catch (e) { }
 
+    // Ambil GPS
     let coords = null;
     try {
       coords = await getCurrentLocation();
@@ -132,40 +175,67 @@ export default function SiswaMode() {
       return;
     }
 
+    // Upload foto selfie
     const today = todayStr();
-    const attStr = await storage.get('attendance:' + today);
-    const att = attStr ? JSON.parse(attStr) : {};
-    let record;
+    const selfieUrl = await uploadSelfie(capturedPhoto, matchedStudent.id, today);
 
-    if (cfg.schoolLat != null && cfg.schoolLng != null && !isNaN(parseFloat(cfg.schoolLat))) {
-      const dist = haversine(coords.lat, coords.lng, parseFloat(cfg.schoolLat), parseFloat(cfg.schoolLng));
-      const within = dist <= (cfg.radius || 200);
-      if (within) {
-        record = { status: 'H', time: nowTime(), distance: dist, withinRadius: true, pending: false, selfCheckin: true, lat: coords.lat, lng: coords.lng };
-      } else {
-        record = { time: nowTime(), distance: dist, withinRadius: false, pending: true, selfCheckin: true, lat: coords.lat, lng: coords.lng };
-      }
-      att[matchedStudent.id] = record;
-      await storage.set('attendance:' + today, JSON.stringify(att));
-      await storage.set('selfie:' + today + ':' + matchedStudent.id, capturedPhoto);
-      
-      setAttendanceRecord(record);
-      if (within) {
-        setCheckinState('checked-in');
-        showToast('Absen tersimpan');
-      } else {
-        setCheckinState('pending-verification');
-        showToast('Absen menunggu verifikasi');
-      }
+    let record;
+    const schoolLat = parseFloat(cfg.schoolLat);
+    const schoolLng = parseFloat(cfg.schoolLng);
+    const radius = parseInt(cfg.radius) || 200;
+
+    if (!isNaN(schoolLat) && !isNaN(schoolLng)) {
+      const dist = haversine(coords.lat, coords.lng, schoolLat, schoolLng);
+      const within = dist <= radius;
+      record = {
+        student_id: matchedStudent.id,
+        date: today,
+        status: within ? 'H' : null,
+        time: nowTime(),
+        distance: dist,
+        within_radius: within,
+        pending: !within,
+        self_checkin: true,
+        lat: coords.lat,
+        lng: coords.lng,
+        selfie_url: selfieUrl,
+      };
     } else {
-      record = { status: 'H', time: nowTime(), distance: null, withinRadius: null, pending: false, selfCheckin: true, lat: coords.lat, lng: coords.lng };
-      att[matchedStudent.id] = record;
-      await storage.set('attendance:' + today, JSON.stringify(att));
-      await storage.set('selfie:' + today + ':' + matchedStudent.id, capturedPhoto);
-      
-      setAttendanceRecord(record);
+      record = {
+        student_id: matchedStudent.id,
+        date: today,
+        status: 'H',
+        time: nowTime(),
+        distance: null,
+        within_radius: null,
+        pending: false,
+        self_checkin: true,
+        lat: coords.lat,
+        lng: coords.lng,
+        selfie_url: selfieUrl,
+      };
+    }
+
+    // Upsert ke Supabase
+    const { data: saved, error } = await supabase
+      .from('attendance')
+      .upsert(record, { onConflict: 'student_id,date' })
+      .select()
+      .single();
+
+    if (error) {
+      setCameraError('Gagal menyimpan absensi: ' + error.message);
+      setCheckinState('photo-captured');
+      return;
+    }
+
+    setAttendanceRecord(saved);
+    if (saved.pending) {
+      setCheckinState('pending-verification');
+      showToast('Absen menunggu verifikasi guru');
+    } else {
       setCheckinState('checked-in');
-      showToast('Absen tersimpan');
+      showToast('Absen tersimpan ✓');
     }
   };
 
@@ -179,11 +249,11 @@ export default function SiswaMode() {
         <Card>
           <span className="field-label">Masukkan NISN</span>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <input 
-              type="text" 
-              inputMode="numeric" 
-              placeholder="Contoh: 0106090576" 
-              value={nis} 
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="Contoh: 0106090576"
+              value={nis}
               onChange={e => setNis(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleNisSubmit()}
               style={{ flex: 1, minWidth: 120 }}
@@ -202,6 +272,12 @@ export default function SiswaMode() {
             <div style={{ fontFamily: '"Outfit", sans-serif', fontSize: 26, fontWeight: 600, marginTop: 4 }}>{matchedStudent?.name}</div>
           </div>
 
+          {checkinState === 'checking' && (
+            <div style={{ textAlign: 'center', padding: '24px 0' }}>
+              <span className="spin" style={{ display: 'inline-block', marginRight: 8 }}></span>Memeriksa status...
+            </div>
+          )}
+
           {checkinState === 'checked-in' && (
             <div className="status-box ok">
               <div>Kamu sudah tercatat <b>{getStatusLabel(attendanceRecord.status)}</b> hari ini pukul {attendanceRecord.time || '-'}.</div>
@@ -210,7 +286,7 @@ export default function SiswaMode() {
 
           {checkinState === 'pending-verification' && (
             <div className="status-box warn">
-              <div>Absen kamu (pukul {attendanceRecord.time || '-'}) tercatat di luar radius sekolah (&plusmn;{Math.round(attendanceRecord.distance)} m) dan sedang menunggu verifikasi guru.</div>
+              <div>Absen kamu (pukul {attendanceRecord.time || '-'}) tercatat di luar radius sekolah (±{Math.round(attendanceRecord.distance)} m) dan sedang menunggu verifikasi guru.</div>
             </div>
           )}
 
@@ -257,7 +333,7 @@ export default function SiswaMode() {
           )}
 
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
-            <Button variant="ghost" size="sm" onClick={() => setCheckinState('idle')}>Kembali</Button>
+            <Button variant="ghost" size="sm" onClick={() => { stopCamera(); setCheckinState('idle'); setMatchedStudent(null); }}>Kembali</Button>
           </div>
         </div>
       )}

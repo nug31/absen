@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '../UI/Card';
 import { Button } from '../UI/Button';
 import { useToast } from '../UI/Toast';
-import { storage } from '../../utils/storage';
+import { supabase } from '../../lib/supabase';
+import defaultStudents from '../../data/defaultStudents';
 
 export default function GuruPanelRekap() {
   const [students, setStudents] = useState([]);
@@ -17,28 +18,34 @@ export default function GuruPanelRekap() {
 
   const loadRekap = async () => {
     setLoading(true);
-    const rStu = await storage.get('students');
-    const stus = rStu ? JSON.parse(rStu) : [];
+
+    // Load siswa
+    const { data: stuData } = await supabase.from('students').select('*').order('name');
+    const stus = (stuData && stuData.length > 0) ? stuData : defaultStudents;
     setStudents(stus);
 
-    const keys = await storage.list('attendance:');
-    const attDates = keys.map(k => k.replace('attendance:', '')).sort();
-    setDates(attDates);
+    // Load semua attendance
+    const { data: attData } = await supabase
+      .from('attendance')
+      .select('student_id, date, status, pending')
+      .order('date');
 
+    const dateSet = new Set();
     const calcTotals = {};
     stus.forEach(s => { calcTotals[s.id] = { H: 0, S: 0, I: 0, A: 0 }; });
 
-    for (const dstr of attDates) {
-      const attStr = await storage.get('attendance:' + dstr);
-      const att = attStr ? JSON.parse(attStr) : {};
-      
-      Object.keys(att).forEach(stuId => {
-        const r = att[stuId];
-        if (calcTotals[stuId] && r?.status && calcTotals[stuId].hasOwnProperty(r.status)) {
-          calcTotals[stuId][r.status]++;
+    if (attData) {
+      attData.forEach(r => {
+        dateSet.add(r.date);
+        if (calcTotals[r.student_id] && r.status && !r.pending) {
+          if (calcTotals[r.student_id].hasOwnProperty(r.status)) {
+            calcTotals[r.student_id][r.status]++;
+          }
         }
       });
     }
+
+    setDates([...dateSet].sort());
     setTotals(calcTotals);
     setLoading(false);
   };
@@ -56,17 +63,24 @@ export default function GuruPanelRekap() {
       return;
     }
 
+    const { data: attData } = await supabase
+      .from('attendance')
+      .select('student_id, date, status, pending');
+
+    // Map: { date: { student_id: record } }
     const attByDate = {};
-    for (const d of dates) {
-      const attStr = await storage.get('attendance:' + d);
-      attByDate[d] = attStr ? JSON.parse(attStr) : {};
+    if (attData) {
+      attData.forEach(r => {
+        if (!attByDate[r.date]) attByDate[r.date] = {};
+        attByDate[r.date][r.student_id] = r;
+      });
     }
 
-    let csv = 'Nama,NIS,' + dates.join(',') + '\n';
+    let csv = 'Nama,NISN,' + dates.join(',') + '\n';
     students.forEach(s => {
       const row = [csvEscape(s.name), csvEscape(s.nis || '')];
       dates.forEach(d => {
-        const r = attByDate[d][s.id];
+        const r = attByDate[d]?.[s.id];
         row.push(r?.status ? r.status : (r?.pending ? 'Menunggu' : ''));
       });
       csv += row.join(',') + '\n';
@@ -75,14 +89,10 @@ export default function GuruPanelRekap() {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    
-    const todayStr = () => {
-      const d = new Date();
-      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    };
-    
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
     a.href = url;
-    a.download = `absensi_rekap_${todayStr()}.csv`;
+    a.download = `absenio_rekap_${todayStr}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -104,11 +114,9 @@ export default function GuruPanelRekap() {
         <div>
           <span className="field-label">Rekap Keseluruhan</span>
           <div className="note" style={{ margin: 0, color: 'var(--text-primary)' }}>
-            {dates.length > 0 ? (
-              `${dates.length} hari tercatat \u00B7 ${fmtDateLong(dates[0])} s.d. ${fmtDateLong(dates[dates.length - 1])}`
-            ) : (
-              'Belum ada data'
-            )}
+            {dates.length > 0
+              ? `${dates.length} hari tercatat · ${fmtDateLong(dates[0])} s.d. ${fmtDateLong(dates[dates.length - 1])}`
+              : 'Belum ada data'}
           </div>
         </div>
         <Button variant="ghost" onClick={handleExportCsv}>Unduh CSV</Button>

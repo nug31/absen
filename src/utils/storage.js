@@ -1,58 +1,50 @@
+// storage.js — semua operasi sekarang pakai Supabase
+// File ini dipertahankan sebagai compatibility layer untuk config saja.
+// Data siswa & absensi langsung diakses via supabase client di masing-masing komponen.
+
+import { supabase } from '../lib/supabase';
+
 export const storage = {
+  // Config: simpan di tabel config (key-value)
   get: async (key) => {
     try {
-      if (window.storage && typeof window.storage.get === 'function') {
-        const r = await window.storage.get(key, true);
-        return r && r.value ? r.value : null;
+      if (key === 'config') {
+        const { data, error } = await supabase.from('config').select('key, value');
+        if (error) throw error;
+        if (!data || data.length === 0) return null;
+        const cfg = {};
+        data.forEach(row => {
+          try { cfg[row.key] = JSON.parse(row.value); }
+          catch { cfg[row.key] = row.value; }
+        });
+        return JSON.stringify(cfg);
       }
+      // Fallback localStorage untuk key lain
       return localStorage.getItem(key);
     } catch (e) {
-      console.error('Storage get error:', e);
+      console.error('storage.get error:', e);
       return localStorage.getItem(key);
-    }
-  },
-  
-  set: async (key, value) => {
-    try {
-      if (window.storage && typeof window.storage.set === 'function') {
-        const r = await window.storage.set(key, value, true);
-        if (!r) throw new Error('Window storage set failed');
-        return true;
-      }
-      localStorage.setItem(key, value);
-      return true;
-    } catch (e) {
-      console.error('Storage set error:', e);
-      localStorage.setItem(key, value);
-      return true;
     }
   },
 
-  list: async (prefix) => {
+  set: async (key, value) => {
     try {
-      if (window.storage && typeof window.storage.list === 'function') {
-        const r = await window.storage.list(prefix, true);
-        return r && r.keys ? r.keys : [];
-      }
-      return Object.keys(localStorage).filter(k => k.startsWith(prefix));
-    } catch (e) {
-      console.error('Storage list error:', e);
-      return Object.keys(localStorage).filter(k => k.startsWith(prefix));
-    }
-  },
-  
-  remove: async (key) => {
-    try {
-      if (window.storage && typeof window.storage.remove === 'function') {
-        await window.storage.remove(key, true);
+      if (key === 'config') {
+        const cfg = JSON.parse(value);
+        const upserts = Object.entries(cfg).map(([k, v]) => ({
+          key: k,
+          value: typeof v === 'object' ? JSON.stringify(v) : String(v),
+        }));
+        const { error } = await supabase.from('config').upsert(upserts, { onConflict: 'key' });
+        if (error) throw error;
         return true;
       }
-      localStorage.removeItem(key);
+      localStorage.setItem(key, value);
       return true;
     } catch (e) {
-      console.error('Storage remove error:', e);
-      localStorage.removeItem(key);
+      console.error('storage.set error:', e);
+      localStorage.setItem(key, value);
       return true;
     }
-  }
+  },
 };

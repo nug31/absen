@@ -3,7 +3,8 @@ import { Card } from '../UI/Card';
 import { Button } from '../UI/Button';
 import { Lightbox } from '../UI/Lightbox';
 import { useToast } from '../UI/Toast';
-import { storage } from '../../utils/storage';
+import { supabase } from '../../lib/supabase';
+import defaultStudents from '../../data/defaultStudents';
 
 const STATUS = ['H', 'S', 'I', 'A'];
 const STATUS_LABEL = { H: 'Hadir', S: 'Sakit', I: 'Izin', A: 'Alpa' };
@@ -15,9 +16,9 @@ export default function GuruPanelAbsen() {
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   });
   const [students, setStudents] = useState([]);
-  const [attendance, setAttendance] = useState({});
-  const [selfies, setSelfies] = useState({});
+  const [attendance, setAttendance] = useState({}); // { student_id: record }
   const [lightbox, setLightbox] = useState({ show: false, imgData: null, meta: '' });
+  const [loading, setLoading] = useState(false);
   const showToast = useToast();
 
   useEffect(() => {
@@ -25,22 +26,22 @@ export default function GuruPanelAbsen() {
   }, [dateStr]);
 
   const loadData = async () => {
-    const rStu = await storage.get('students');
-    const stus = rStu ? JSON.parse(rStu) : [];
+    setLoading(true);
+    // Load siswa dari Supabase, fallback ke default
+    const { data: stuData } = await supabase.from('students').select('*').order('name');
+    const stus = (stuData && stuData.length > 0) ? stuData : defaultStudents;
     setStudents(stus);
 
-    const rAtt = await storage.get('attendance:' + dateStr);
-    const att = rAtt ? JSON.parse(rAtt) : {};
-    setAttendance(att);
+    // Load absensi hari ini
+    const { data: attData } = await supabase
+      .from('attendance')
+      .select('*')
+      .eq('date', dateStr);
 
-    const newSelfies = {};
-    for (const s of stus) {
-      if (att[s.id]?.selfCheckin) {
-        const photo = await storage.get('selfie:' + dateStr + ':' + s.id);
-        if (photo) newSelfies[s.id] = photo;
-      }
-    }
-    setSelfies(newSelfies);
+    const attMap = {};
+    if (attData) attData.forEach(r => { attMap[r.student_id] = r; });
+    setAttendance(attMap);
+    setLoading(false);
   };
 
   const computeCounts = () => {
@@ -51,44 +52,70 @@ export default function GuruPanelAbsen() {
       else if (r?.status && c.hasOwnProperty(r.status)) c[r.status]++;
     });
     const done = c.H + c.S + c.I + c.A + c.P;
-    const belum = students.length - done;
-    return { ...c, belum };
+    return { ...c, belum: students.length - done };
   };
 
   const handleMarkAllHadir = async () => {
     if (students.length === 0) return;
-    const newAtt = { ...attendance };
     const nowTime = `${String(new Date().getHours()).padStart(2,'0')}:${String(new Date().getMinutes()).padStart(2,'0')}`;
-    
-    students.forEach(s => {
-      if (!newAtt[s.id] || !newAtt[s.id].status) {
-        newAtt[s.id] = { status: 'H', time: nowTime, distance: null, withinRadius: null, pending: false, selfCheckin: false };
-      }
-    });
-    
-    await storage.set('attendance:' + dateStr, JSON.stringify(newAtt));
-    setAttendance(newAtt);
+
+    const toUpsert = students
+      .filter(s => !attendance[s.id] || !attendance[s.id].status)
+      .map(s => ({
+        student_id: s.id,
+        date: dateStr,
+        status: 'H',
+        time: nowTime,
+        pending: false,
+        self_checkin: false,
+      }));
+
+    if (toUpsert.length === 0) return;
+
+    const { error } = await supabase
+      .from('attendance')
+      .upsert(toUpsert, { onConflict: 'student_id,date' });
+
+    if (error) { showToast('Gagal: ' + error.message); return; }
     showToast('Siswa tanpa catatan ditandai Hadir');
+    await loadData();
   };
 
   const handleStatusToggle = async (stuId, status) => {
-    const newAtt = { ...attendance };
-    const existing = newAtt[stuId];
-    
+    const existing = attendance[stuId];
+
     if (existing?.status === status) {
+      // Hapus record
+      await supabase.from('attendance').delete()
+        .eq('student_id', stuId).eq('date', dateStr);
+      const newAtt = { ...attendance };
       delete newAtt[stuId];
+      setAttendance(newAtt);
     } else {
       const nowTime = `${String(new Date().getHours()).padStart(2,'0')}:${String(new Date().getMinutes()).padStart(2,'0')}`;
-      newAtt[stuId] = {
-        ...existing,
+      const record = {
+        student_id: stuId,
+        date: dateStr,
         status,
         time: existing?.time || nowTime,
-        pending: false
+        pending: false,
+        self_checkin: existing?.self_checkin || false,
+        distance: existing?.distance || null,
+        within_radius: existing?.within_radius || null,
+        lat: existing?.lat || null,
+        lng: existing?.lng || null,
+        selfie_url: existing?.selfie_url || null,
       };
+
+      const { data: saved, error } = await supabase
+        .from('attendance')
+        .upsert(record, { onConflict: 'student_id,date' })
+        .select()
+        .single();
+
+      if (error) { showToast('Gagal: ' + error.message); return; }
+      setAttendance(prev => ({ ...prev, [stuId]: saved }));
     }
-    
-    await storage.set('attendance:' + dateStr, JSON.stringify(newAtt));
-    setAttendance(newAtt);
   };
 
   const c = computeCounts();
@@ -115,15 +142,16 @@ export default function GuruPanelAbsen() {
       </div>
 
       <Card>
-        {students.length === 0 ? (
+        {loading ? (
+          <div className="empty">Memuat data...</div>
+        ) : students.length === 0 ? (
           <div className="empty"><b>Belum ada siswa</b>Tambahkan daftar siswa di tab "Kelola Siswa".</div>
         ) : (
           <div>
             {students.map(s => {
               const rec = attendance[s.id];
               const st = rec?.status || '';
-              const photo = selfies[s.id];
-              
+
               return (
                 <div key={s.id} className="roster-row">
                   <div className="roster-main">
@@ -132,19 +160,19 @@ export default function GuruPanelAbsen() {
                       {s.nis && <span className="stu-nis">NISN {s.nis}</span>}
                       {rec?.pending && (
                         <div className="pending-badge">
-                          Menunggu verifikasi &middot; &plusmn;{Math.round(rec.distance)} m &middot; {rec.time}
+                          Menunggu verifikasi &middot; ±{Math.round(rec.distance)} m &middot; {rec.time}
                         </div>
                       )}
-                      {rec?.selfCheckin && !rec.pending && (
+                      {rec?.self_checkin && !rec.pending && (
                         <div className="note" style={{ margin: '6px 0 0' }}>
-                          Check-in mandiri pukul {rec.time} {rec.distance != null ? `\u00B7 \u00B1${Math.round(rec.distance)} m` : ''}
+                          Check-in mandiri pukul {rec.time} {rec.distance != null ? `· ±${Math.round(rec.distance)} m` : ''}
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="rocker">
                       {STATUS.map(code => (
-                        <button 
+                        <button
                           key={code}
                           className={st === code ? `on ${STATUS_CLASS[code]}` : ''}
                           onClick={() => handleStatusToggle(s.id, code)}
@@ -155,17 +183,17 @@ export default function GuruPanelAbsen() {
                       ))}
                     </div>
                   </div>
-                  
-                  {photo && (
-                    <button 
-                      className="thumb-btn" 
-                      onClick={() => setLightbox({ 
-                        show: true, 
-                        imgData: photo, 
-                        meta: `${s.name} \u00B7 ${dateStr} ${rec?.time||''} ${rec?.distance != null ? `\u00B7 \u00B1${Math.round(rec.distance)}m` : ''}` 
+
+                  {rec?.selfie_url && (
+                    <button
+                      className="thumb-btn"
+                      onClick={() => setLightbox({
+                        show: true,
+                        imgData: rec.selfie_url,
+                        meta: `${s.name} · ${dateStr} ${rec.time || ''} ${rec.distance != null ? `· ±${Math.round(rec.distance)}m` : ''}`
                       })}
                     >
-                      <img src={photo} alt={`Foto ${s.name}`} />
+                      <img src={rec.selfie_url} alt={`Foto ${s.name}`} />
                     </button>
                   )}
                 </div>
@@ -175,11 +203,11 @@ export default function GuruPanelAbsen() {
         )}
       </Card>
 
-      <Lightbox 
-        show={lightbox.show} 
-        imgData={lightbox.imgData} 
-        metaText={lightbox.meta} 
-        onClose={() => setLightbox({ show: false, imgData: null, meta: '' })} 
+      <Lightbox
+        show={lightbox.show}
+        imgData={lightbox.imgData}
+        metaText={lightbox.meta}
+        onClose={() => setLightbox({ show: false, imgData: null, meta: '' })}
       />
     </div>
   );

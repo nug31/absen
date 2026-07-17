@@ -1,16 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../UI/Card';
 import { Button } from '../UI/Button';
 import { useToast } from '../UI/Toast';
-import { storage } from '../../utils/storage';
+import { supabase } from '../../lib/supabase';
 
 export default function GuruPanelSetting({ config, setConfig }) {
-  const [lat, setLat] = useState(config?.schoolLat ?? '');
-  const [lng, setLng] = useState(config?.schoolLng ?? '');
-  const [radius, setRadius] = useState(config?.radius ?? 200);
+  const [lat, setLat] = useState('');
+  const [lng, setLng] = useState('');
+  const [radius, setRadius] = useState(200);
   const [newPin, setNewPin] = useState('');
   const [isLocating, setIsLocating] = useState(false);
   const showToast = useToast();
+
+  // Load config dari Supabase saat mount
+  useEffect(() => {
+    const loadConfig = async () => {
+      const { data } = await supabase.from('config').select('key, value');
+      if (data) {
+        const cfg = {};
+        data.forEach(r => { cfg[r.key] = r.value; });
+        if (cfg.schoolLat) setLat(cfg.schoolLat);
+        if (cfg.schoolLng) setLng(cfg.schoolLng);
+        if (cfg.radius) setRadius(cfg.radius);
+        setConfig(cfg);
+      }
+    };
+    loadConfig();
+  }, []);
+
+  const saveConfigKeys = async (pairs) => {
+    const upserts = Object.entries(pairs).map(([k, v]) => ({ key: k, value: String(v) }));
+    const { error } = await supabase.from('config').upsert(upserts, { onConflict: 'key' });
+    if (error) throw error;
+    setConfig(prev => ({ ...prev, ...pairs }));
+  };
 
   const handleUseCurrentLoc = () => {
     if (!navigator.geolocation) {
@@ -25,7 +48,7 @@ export default function GuruPanelSetting({ config, setConfig }) {
         setIsLocating(false);
         showToast('Lokasi saat ini diambil, jangan lupa Simpan');
       },
-      err => {
+      () => {
         setIsLocating(false);
         showToast('Gagal mengambil lokasi');
       },
@@ -37,16 +60,22 @@ export default function GuruPanelSetting({ config, setConfig }) {
     const plat = parseFloat(lat);
     const plng = parseFloat(lng);
     const pradius = parseInt(radius, 10);
-    
+
     if (isNaN(plat) || isNaN(plng)) {
       showToast('Lat/Lng belum valid');
       return;
     }
-    
-    const newConfig = { ...config, schoolLat: plat, schoolLng: plng, radius: isNaN(pradius) ? 200 : pradius };
-    await storage.set('config', JSON.stringify(newConfig));
-    setConfig(newConfig);
-    showToast('Pengaturan lokasi tersimpan');
+
+    try {
+      await saveConfigKeys({
+        schoolLat: plat,
+        schoolLng: plng,
+        radius: isNaN(pradius) ? 200 : pradius,
+      });
+      showToast('Pengaturan lokasi tersimpan');
+    } catch (e) {
+      showToast('Gagal menyimpan: ' + e.message);
+    }
   };
 
   const handleSavePin = async () => {
@@ -55,11 +84,13 @@ export default function GuruPanelSetting({ config, setConfig }) {
       showToast('PIN harus 4 digit angka');
       return;
     }
-    const newConfig = { ...config, pin };
-    await storage.set('config', JSON.stringify(newConfig));
-    setConfig(newConfig);
-    setNewPin('');
-    showToast('PIN diperbarui');
+    try {
+      await saveConfigKeys({ pin });
+      setNewPin('');
+      showToast('PIN diperbarui');
+    } catch (e) {
+      showToast('Gagal menyimpan PIN: ' + e.message);
+    }
   };
 
   return (
@@ -76,32 +107,33 @@ export default function GuruPanelSetting({ config, setConfig }) {
             <input type="text" placeholder="106.816666" value={lng} onChange={e => setLng(e.target.value)} />
           </div>
         </div>
-        
+
         <Button variant="ghost" size="sm" onClick={handleUseCurrentLoc} disabled={isLocating}>
           {isLocating ? 'Mengambil lokasi...' : 'Gunakan Lokasi Saya Sekarang'}
         </Button>
-        
+
         <div style={{ marginTop: 16 }}>
           <div className="note" style={{ margin: '0 0 4px' }}>Radius toleransi (meter)</div>
           <input type="number" min="10" step="10" value={radius} onChange={e => setRadius(e.target.value)} />
         </div>
-        
+
         <Button onClick={handleSaveLoc} style={{ marginTop: 16 }}>Simpan Pengaturan Lokasi</Button>
       </Card>
 
       <Card>
         <span className="field-label">Ubah PIN Guru</span>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <input 
-            type="text" 
-            placeholder="PIN baru (4 digit)" 
-            maxLength="4" 
+          <input
+            type="text"
+            placeholder="PIN baru (4 digit)"
+            maxLength="4"
             style={{ maxWidth: 160 }}
             value={newPin}
             onChange={e => setNewPin(e.target.value)}
           />
           <Button variant="ghost" onClick={handleSavePin}>Simpan PIN</Button>
         </div>
+        <div className="note" style={{ marginTop: 8 }}>PIN default: 1234. Konfigurasi tersimpan di database dan berlaku untuk semua device.</div>
       </Card>
     </div>
   );
