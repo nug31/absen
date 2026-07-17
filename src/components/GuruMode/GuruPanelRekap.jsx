@@ -3,6 +3,7 @@ import { Card } from '../UI/Card';
 import { Button } from '../UI/Button';
 import { useToast } from '../UI/Toast';
 import { supabase } from '../../lib/supabase';
+import * as XLSX from 'xlsx';
 import defaultStudents from '../../data/defaultStudents';
 
 export default function GuruPanelRekap() {
@@ -50,14 +51,9 @@ export default function GuruPanelRekap() {
     setLoading(false);
   };
 
-  const csvEscape = (v) => {
-    if (v == null) return '';
-    const s = String(v);
-    if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
-    return s;
-  };
 
-  const handleExportCsv = async () => {
+
+  const handleExportExcel = async () => {
     if (dates.length === 0 || students.length === 0) {
       showToast('Belum ada data untuk diunduh');
       return;
@@ -76,28 +72,31 @@ export default function GuruPanelRekap() {
       });
     }
 
-    let csv = 'Nama,NISN,' + dates.join(',') + '\n';
+    const excelData = [];
+    
     students.forEach(s => {
-      const row = [csvEscape(s.name), csvEscape(s.nis || '')];
+      const row = {
+        'Nama Siswa': s.name,
+        'NISN': s.nis || ''
+      };
+      
       dates.forEach(d => {
         const r = attByDate[d]?.[s.id];
-        row.push(r?.status ? r.status : (r?.pending ? 'Menunggu' : ''));
+        row[d] = r?.status ? r.status : (r?.pending ? 'Menunggu' : '');
       });
-      csv += row.join(',') + '\n';
+      
+      excelData.push(row);
     });
 
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Rekap Absensi");
+    
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-    a.href = url;
-    a.download = `absenio_rekap_${todayStr}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showToast('CSV diunduh');
+    XLSX.writeFile(workbook, `absenio_rekap_${todayStr}.xlsx`);
+    
+    showToast('File Excel diunduh');
   };
 
   const fmtDateLong = (dstr) => {
@@ -119,7 +118,7 @@ export default function GuruPanelRekap() {
               : 'Belum ada data'}
           </div>
         </div>
-        <Button variant="ghost" onClick={handleExportCsv}>Unduh CSV</Button>
+        <Button variant="ghost" onClick={handleExportExcel}>Unduh Excel</Button>
       </Card>
 
       <Card style={{ overflowX: 'auto', padding: 0 }}>

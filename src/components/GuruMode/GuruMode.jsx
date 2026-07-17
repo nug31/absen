@@ -79,7 +79,6 @@ export default function GuruMode() {
             ))}
           </div>
           <Button block onClick={submitPin}>Masuk</Button>
-          <div className="note">PIN default: 1234 (ubah di tab Pengaturan setelah masuk).</div>
         </Card>
       </div>
     );

@@ -253,23 +253,38 @@ export default function SiswaMode() {
   return (
     <div style={{ maxWidth: 420, margin: '0 auto' }}>
       {checkinState === 'idle' || checkinState === 'not-found' ? (
-        <Card>
-          <span className="field-label">Masukkan NISN</span>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        <Card style={{ padding: '32px 24px', textAlign: 'center' }}>
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>👋</div>
+            <h2 style={{ fontSize: 24, marginBottom: 8, color: 'var(--text-primary)' }}>Absen Masuk</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Silakan masukkan NISN Anda untuk melanjutkan</p>
+          </div>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: 300, margin: '0 auto' }}>
             <input
               type="text"
               inputMode="numeric"
-              placeholder="Contoh: 0106090576"
+              placeholder="Ketik NISN..."
               value={nis}
               onChange={e => setNis(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleNisSubmit()}
-              style={{ flex: 1, minWidth: 120 }}
+              style={{ 
+                fontSize: 20, 
+                padding: '16px', 
+                textAlign: 'center', 
+                letterSpacing: '2px',
+                borderRadius: '16px',
+                backgroundColor: 'rgba(15,23,42,0.8)',
+                border: '2px solid var(--surface-border)'
+              }}
             />
-            <Button onClick={handleNisSubmit}>Cek</Button>
+            <Button onClick={handleNisSubmit} style={{ padding: '16px', fontSize: 16, borderRadius: '16px' }}>Lanjutkan</Button>
           </div>
-          <div className="note">Ketik NISN kamu, sistem akan mencocokkan nama secara otomatis.</div>
+          
           {checkinState === 'not-found' && (
-            <div className="status-box err" style={{ marginTop: 12 }}>NISN "{nis}" tidak ditemukan di daftar kelas.</div>
+            <div className="status-box err" style={{ marginTop: 24, justifyContent: 'center' }}>
+              NISN "{nis}" tidak ditemukan.
+            </div>
           )}
         </Card>
       ) : (
