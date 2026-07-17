@@ -49,3 +49,14 @@ ALTER TABLE config     ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "public_all" ON students   FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "public_all" ON attendance FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "public_all" ON config     FOR ALL USING (true) WITH CHECK (true);
+
+-- ============================================================
+-- 6. Storage Bucket untuk Foto Selfie (Buka Akses Publik)
+-- ============================================================
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('absenio', 'absenio', true) 
+ON CONFLICT (id) DO NOTHING;
+
+-- Policy: izinkan upload/baca gambar untuk bucket 'absenio'
+CREATE POLICY "public_storage_all" ON storage.objects 
+  FOR ALL USING (bucket_id = 'absenio') WITH CHECK (bucket_id = 'absenio');
