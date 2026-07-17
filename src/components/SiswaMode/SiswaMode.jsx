@@ -4,6 +4,7 @@ import { Button } from '../UI/Button';
 import { useToast } from '../UI/Toast';
 import { storage } from '../../utils/storage';
 import { haversine, getCurrentLocation } from '../../utils/geo';
+import defaultStudents from '../../data/defaultStudents';
 
 export default function SiswaMode() {
   const [nis, setNis] = useState('');
@@ -39,7 +40,8 @@ export default function SiswaMode() {
     }
     try {
       const r = await storage.get('students');
-      const students = r ? JSON.parse(r) : [];
+      // Fallback ke defaultStudents jika localStorage kosong
+      const students = (r ? JSON.parse(r) : null) || defaultStudents;
       const found = students.find(s => s.nis && s.nis.toLowerCase() === nis.trim().toLowerCase());
       if (!found) {
         setCheckinState('not-found');
