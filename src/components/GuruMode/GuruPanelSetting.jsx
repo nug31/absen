@@ -133,7 +133,7 @@ export default function GuruPanelSetting({ config, setConfig }) {
           />
           <Button variant="ghost" onClick={handleSavePin}>Simpan PIN</Button>
         </div>
-        <div className="note" style={{ marginTop: 8 }}>PIN default: 1234. Konfigurasi tersimpan di database dan berlaku untuk semua device.</div>
+        <div className="note" style={{ marginTop: 8 }}>PIN default: 3194. Konfigurasi tersimpan di database dan berlaku untuk semua device.</div>
       </Card>
     </div>
   );

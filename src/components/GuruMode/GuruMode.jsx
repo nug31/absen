@@ -19,7 +19,7 @@ export default function GuruMode() {
 
   useEffect(() => {
     supabase.from('config').select('key, value').then(({ data }) => {
-      const cfg = { pin: '1234' };
+      const cfg = { pin: '3194' };
       if (data) data.forEach(r => { cfg[r.key] = r.value; });
       setConfig(cfg);
     });
@@ -49,7 +49,7 @@ export default function GuruMode() {
       showToast('Masukkan 4 digit PIN');
       return;
     }
-    if (entered === (config?.pin || '1234')) {
+    if (entered === (config?.pin || '3194')) {
       setAuthed(true);
       setPin(['', '', '', '']);
     } else {

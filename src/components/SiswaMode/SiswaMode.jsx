@@ -98,7 +98,14 @@ export default function SiswaMode() {
   const startCamera = async () => {
     setCameraError('');
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'user',
+          width: { ideal: 720 },
+          height: { ideal: 1280 }
+        },
+        audio: false
+      });
       setCameraStream(stream);
       setCheckinState('camera-ready');
     } catch (e) {
@@ -116,14 +123,17 @@ export default function SiswaMode() {
     if (!videoRef.current) return;
     const video = videoRef.current;
     const canvas = document.createElement('canvas');
-    canvas.width = 320; canvas.height = 240;
+    const TARGET_WIDTH = 480;
+    const TARGET_HEIGHT = 640;
+    canvas.width = TARGET_WIDTH;
+    canvas.height = TARGET_HEIGHT;
     const ctx = canvas.getContext('2d');
-    const vw = video.videoWidth || 320, vh = video.videoHeight || 240;
-    const scale = Math.max(320/vw, 240/vh);
-    const sw = 320/scale, sh = 240/scale;
+    const vw = video.videoWidth || TARGET_WIDTH, vh = video.videoHeight || TARGET_HEIGHT;
+    const scale = Math.max(TARGET_WIDTH/vw, TARGET_HEIGHT/vh);
+    const sw = TARGET_WIDTH/scale, sh = TARGET_HEIGHT/scale;
     const sx = (vw-sw)/2, sy = (vh-sh)/2;
-    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, 320, 240);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.55);
+    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
     setCapturedPhoto(dataUrl);
     stopCamera();
     setCheckinState('photo-captured');
