@@ -99,11 +99,7 @@ export default function SiswaMode() {
     setCameraError('');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'user',
-          width: { ideal: 720 },
-          height: { ideal: 1280 }
-        },
+        video: { facingMode: 'user' },
         audio: false
       });
       setCameraStream(stream);
@@ -123,16 +119,10 @@ export default function SiswaMode() {
     if (!videoRef.current) return;
     const video = videoRef.current;
     const canvas = document.createElement('canvas');
-    const TARGET_WIDTH = 480;
-    const TARGET_HEIGHT = 640;
-    canvas.width = TARGET_WIDTH;
-    canvas.height = TARGET_HEIGHT;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
-    const vw = video.videoWidth || TARGET_WIDTH, vh = video.videoHeight || TARGET_HEIGHT;
-    const scale = Math.max(TARGET_WIDTH/vw, TARGET_HEIGHT/vh);
-    const sw = TARGET_WIDTH/scale, sh = TARGET_HEIGHT/scale;
-    const sx = (vw-sw)/2, sy = (vh-sh)/2;
-    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
     setCapturedPhoto(dataUrl);
     stopCamera();

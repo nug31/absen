@@ -306,12 +306,12 @@ input:focus {
 
 /* Camera Wrapper */
 .cam-wrap {
-  position: relative; width: 100%; aspect-ratio: 3/4; max-width: 340px; margin: 0 auto;
+  position: relative; width: 100%; max-width: 340px; margin: 0 auto;
   border-radius: 20px; overflow: hidden; background: #000;
   border: 2px solid var(--surface-border);
   box-shadow: 0 10px 40px rgba(0,0,0,0.3);
 }
-.cam-wrap video, .cam-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cam-wrap video, .cam-wrap img { width: 100%; height: auto; display: block; }
 
 /* PIN Input */
 .pin-boxes { display: flex; gap: 12px; justify-content: center; margin: 24px 0; }
