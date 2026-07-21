@@ -7,19 +7,19 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['logo.png'],
       manifest: {
-        name: 'Absenio - Absensi Digital',
-        short_name: 'Absenio',
+        name: 'ABSEN SISWA',
+        short_name: 'ABSEN',
         description: 'Aplikasi Absensi Digital untuk Sekolah',
         theme_color: '#0f172a',
         background_color: '#0f172a',
         display: 'standalone',
         icons: [
           {
-            src: '/favicon.svg',
+            src: '/logo.png',
             sizes: '192x192 512x512',
-            type: 'image/svg+xml',
+            type: 'image/png',
             purpose: 'any maskable'
           }
         ]
