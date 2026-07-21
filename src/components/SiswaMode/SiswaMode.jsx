@@ -177,7 +177,11 @@ export default function SiswaMode() {
     try {
       coords = await getCurrentLocation();
     } catch (e) {
-      setCameraError('Tidak bisa mengambil lokasi. Pastikan izin lokasi diaktifkan.');
+      const isPermDenied = e?.code === 1; // GeolocationPositionError.PERMISSION_DENIED
+      const errMsg = isPermDenied
+        ? 'Izin lokasi ditolak. Cara mengaktifkan kembali:\n• Android: Pengaturan HP → Aplikasi → Chrome → Izin → Lokasi → Izinkan\n• iOS: Pengaturan → Safari → Lokasi → Izinkan\nSetelah diizinkan, muat ulang halaman dan coba absen lagi.'
+        : 'Tidak bisa mengambil lokasi. Pastikan GPS/Lokasi di HP Anda aktif, lalu coba lagi.';
+      setCameraError(errMsg);
       setCheckinState('photo-captured');
       return;
     }

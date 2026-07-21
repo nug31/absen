@@ -233,8 +233,8 @@ input:focus {
 /* Status Boxes */
 .status-box {
   border-radius: 14px; padding: 16px 20px; margin-bottom: 16px;
-  font-size: 14px; line-height: 1.6; display: flex; align-items: center; gap: 12px;
-  animation: slideIn 0.3s ease-out;
+  font-size: 14px; line-height: 1.7; display: flex; align-items: flex-start; gap: 12px;
+  animation: slideIn 0.3s ease-out; white-space: pre-wrap; word-break: break-word;
 }
 .status-box.ok { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); color: #34d399; }
 .status-box.warn { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); color: #fbbf24; }
