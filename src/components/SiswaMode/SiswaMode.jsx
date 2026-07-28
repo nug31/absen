@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '../UI/Card';
 import { Button } from '../UI/Button';
 import { useToast } from '../UI/Toast';
+import AbsenReminder from '../UI/AbsenReminder';
 import { haversine, getCurrentLocation } from '../../utils/geo';
 import { supabase } from '../../lib/supabase';
 import defaultStudents from '../../data/defaultStudents';
@@ -20,12 +21,12 @@ export default function SiswaMode() {
 
   const todayStr = () => {
     const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   };
 
   const nowTime = () => {
     const d = new Date();
-    return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   };
 
   useEffect(() => {
@@ -254,8 +255,12 @@ export default function SiswaMode() {
     return { H: 'Hadir', S: 'Sakit', I: 'Izin', A: 'Alpa' }[code] || code;
   };
 
+  const alreadyCheckedIn = checkinState === 'checked-in' || checkinState === 'pending-verification';
+
   return (
     <div style={{ maxWidth: 420, margin: '0 auto' }}>
+      <AbsenReminder alreadyCheckedIn={alreadyCheckedIn} />
+
       {checkinState === 'idle' || checkinState === 'not-found' ? (
         <Card style={{ padding: '32px 24px', textAlign: 'center' }}>
           <div style={{ marginBottom: 24 }}>
@@ -263,7 +268,7 @@ export default function SiswaMode() {
             <h2 style={{ fontSize: 24, marginBottom: 8, color: 'var(--text-primary)' }}>Absen Masuk</h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Silakan masukkan NISN Anda untuk melanjutkan</p>
           </div>
-          
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: 300, margin: '0 auto' }}>
             <input
               type="text"
@@ -272,10 +277,10 @@ export default function SiswaMode() {
               value={nis}
               onChange={e => setNis(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleNisSubmit()}
-              style={{ 
-                fontSize: 20, 
-                padding: '16px', 
-                textAlign: 'center', 
+              style={{
+                fontSize: 20,
+                padding: '16px',
+                textAlign: 'center',
                 letterSpacing: '2px',
                 borderRadius: '16px',
                 backgroundColor: 'rgba(15,23,42,0.8)',
@@ -284,7 +289,7 @@ export default function SiswaMode() {
             />
             <Button onClick={handleNisSubmit} style={{ padding: '16px', fontSize: 16, borderRadius: '16px' }}>Lanjutkan</Button>
           </div>
-          
+
           {checkinState === 'not-found' && (
             <div className="status-box err" style={{ marginTop: 24, justifyContent: 'center' }}>
               NISN "{nis}" tidak ditemukan.
