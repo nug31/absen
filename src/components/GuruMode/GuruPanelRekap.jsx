@@ -33,7 +33,7 @@ export default function GuruPanelRekap() {
 
     const dateSet = new Set();
     const calcTotals = {};
-    stus.forEach(s => { calcTotals[s.id] = { H: 0, S: 0, I: 0, A: 0 }; });
+    stus.forEach(s => { calcTotals[s.id] = { H: 0, S: 0, I: 0, A: 0, E: 0 }; });
 
     if (attData) {
       attData.forEach(r => {
@@ -135,11 +135,12 @@ export default function GuruPanelRekap() {
                 <th className="num">S</th>
                 <th className="num">I</th>
                 <th className="num">A</th>
+                <th className="num">E</th>
               </tr>
             </thead>
             <tbody>
               {students.map(s => {
-                const t = totals[s.id] || { H: 0, S: 0, I: 0, A: 0 };
+                const t = totals[s.id] || { H: 0, S: 0, I: 0, A: 0, E: 0 };
                 return (
                   <tr key={s.id}>
                     <td style={{ paddingLeft: 20, fontWeight: 500 }}>{s.name}</td>
@@ -147,6 +148,7 @@ export default function GuruPanelRekap() {
                     <td className="num" style={{ color: 'var(--sick)' }}>{t.S}</td>
                     <td className="num" style={{ color: 'var(--izin)' }}>{t.I}</td>
                     <td className="num" style={{ color: 'var(--alpa)' }}>{t.A}</td>
+                    <td className="num" style={{ color: 'var(--eskul, #8b5cf6)' }}>{t.E}</td>
                   </tr>
                 );
               })}

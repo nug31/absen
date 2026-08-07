@@ -15,6 +15,7 @@ export default function SiswaMode() {
   const [cameraError, setCameraError] = useState('');
   const [cameraStream, setCameraStream] = useState(null);
   const [capturedPhoto, setCapturedPhoto] = useState(null);
+  const [isEskul, setIsEskul] = useState(false);
 
   const videoRef = useRef(null);
   const showToast = useToast();
@@ -196,37 +197,34 @@ export default function SiswaMode() {
     const schoolLng = parseFloat(cfg.schoolLng);
     const radius = parseInt(cfg.radius) || 200;
 
-    if (!isNaN(schoolLat) && !isNaN(schoolLng)) {
-      const dist = haversine(coords.lat, coords.lng, schoolLat, schoolLng);
-      const within = dist <= radius;
-      record = {
-        student_id: matchedStudent.id,
-        date: today,
-        status: within ? 'H' : null,
-        time: nowTime(),
-        distance: dist,
-        within_radius: within,
-        pending: !within,
-        self_checkin: true,
-        lat: coords.lat,
-        lng: coords.lng,
-        selfie_url: selfieUrl,
-      };
+    let dist = null;
+    let within = false;
+
+    if (!isNaN(schoolLat) && !isNaN(schoolLng) && coords) {
+      dist = haversine(coords.lat, coords.lng, schoolLat, schoolLng);
+      within = dist <= radius;
     } else {
-      record = {
-        student_id: matchedStudent.id,
-        date: today,
-        status: 'H',
-        time: nowTime(),
-        distance: null,
-        within_radius: null,
-        pending: false,
-        self_checkin: true,
-        lat: coords.lat,
-        lng: coords.lng,
-        selfie_url: selfieUrl,
-      };
+      within = true; 
     }
+
+    // Bypass location check if Eskul
+    if (isEskul) {
+      within = true;
+    }
+
+    record = {
+      student_id: matchedStudent.id,
+      date: today,
+      status: isEskul ? 'E' : (within ? 'H' : null),
+      time: nowTime(),
+      distance: dist,
+      within_radius: within,
+      pending: !within,
+      self_checkin: true,
+      lat: coords?.lat,
+      lng: coords?.lng,
+      selfie_url: selfieUrl,
+    };
 
     // Upsert ke Supabase
     const { data: saved, error } = await supabase
@@ -252,7 +250,7 @@ export default function SiswaMode() {
   };
 
   const getStatusLabel = (code) => {
-    return { H: 'Hadir', S: 'Sakit', I: 'Izin', A: 'Alpa' }[code] || code;
+    return { H: 'Hadir', S: 'Sakit', I: 'Izin', A: 'Alpa', E: 'Eskul' }[code] || code;
   };
 
   const alreadyCheckedIn = checkinState === 'checked-in' || checkinState === 'pending-verification';
@@ -323,6 +321,14 @@ export default function SiswaMode() {
 
           {checkinState === 'waiting-camera' && (
             <>
+              {new Date().getDay() === 6 && (
+                <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'center' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <input type="checkbox" checked={isEskul} onChange={e => setIsEskul(e.target.checked)} style={{ width: 18, height: 18 }} />
+                    <span style={{ color: 'var(--text-primary)' }}>Absen Ekstrakurikuler (Eskul)</span>
+                  </label>
+                </div>
+              )}
               <div className="note" style={{ textAlign: 'center', marginBottom: 16 }}>Ambil selfie untuk absen hari ini. Pastikan izin kamera & lokasi diaktifkan.</div>
               <div style={{ display: 'flex', justifyContent: 'center' }}>
                 <Button onClick={startCamera}>Buka Kamera</Button>

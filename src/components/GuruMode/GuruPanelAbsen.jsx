@@ -6,9 +6,9 @@ import { useToast } from '../UI/Toast';
 import { supabase } from '../../lib/supabase';
 import defaultStudents from '../../data/defaultStudents';
 
-const STATUS = ['H', 'S', 'I', 'A'];
-const STATUS_LABEL = { H: 'Hadir', S: 'Sakit', I: 'Izin', A: 'Alpa' };
-const STATUS_CLASS = { H: 'h', S: 's', I: 'i', A: 'a' };
+const STATUS = ['H', 'S', 'I', 'A', 'E'];
+const STATUS_LABEL = { H: 'Hadir', S: 'Sakit', I: 'Izin', A: 'Alpa', E: 'Eskul' };
+const STATUS_CLASS = { H: 'h', S: 's', I: 'i', A: 'a', E: 'e' };
 
 export default function GuruPanelAbsen() {
   const [dateStr, setDateStr] = useState(() => {
@@ -45,13 +45,13 @@ export default function GuruPanelAbsen() {
   };
 
   const computeCounts = () => {
-    const c = { H: 0, S: 0, I: 0, A: 0, P: 0 };
+    const c = { H: 0, S: 0, I: 0, A: 0, E: 0, P: 0 };
     students.forEach(s => {
       const r = attendance[s.id];
       if (r?.pending) c.P++;
       else if (r?.status && c.hasOwnProperty(r.status)) c[r.status]++;
     });
-    const done = c.H + c.S + c.I + c.A + c.P;
+    const done = c.H + c.S + c.I + c.A + c.E + c.P;
     return { ...c, belum: students.length - done };
   };
 
@@ -150,6 +150,7 @@ export default function GuruPanelAbsen() {
         <div className="chip s"><div className="num">{c.S}</div><div className="lbl">Sakit</div></div>
         <div className="chip i"><div className="num">{c.I}</div><div className="lbl">Izin</div></div>
         <div className="chip a"><div className="num">{c.A}</div><div className="lbl">Alpa</div></div>
+        <div className="chip e"><div className="num">{c.E}</div><div className="lbl">Eskul</div></div>
         <div className="chip p"><div className="num">{c.P}</div><div className="lbl">Verif</div></div>
         <div className="chip"><div className="num">{c.belum}</div><div className="lbl">Belum</div></div>
       </div>
