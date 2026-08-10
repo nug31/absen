@@ -28,7 +28,14 @@ function App() {
     <ToastProvider>
       <div className="plate">
         <div className="plate-left">
-          <div className="plate-badge">TKR</div>
+          <div 
+            className="plate-badge" 
+            onDoubleClick={() => setMode(mode === 'siswa' ? 'guru' : 'siswa')}
+            style={{ cursor: 'pointer' }}
+            title="Ketuk 2x untuk masuk Mode Guru"
+          >
+            TKR
+          </div>
           <div>
             <div className="plate-title">X TKR 2</div>
             <div className="plate-sub">Absensi Siswa &middot; Bengkel Kelas</div>
@@ -37,6 +44,8 @@ function App() {
         <div className="plate-date mono">{clockDate || '--'}</div>
       </div>
 
+      {/* Tombol switch disembunyikan agar siswa tidak bisa asal klik */}
+      {/*
       <div className="switch-container">
         <button 
           className={`switch-btn ${mode === 'siswa' ? 'active' : ''}`}
@@ -51,6 +60,7 @@ function App() {
           Mode Guru
         </button>
       </div>
+      */}
 
       <main>
         {mode === 'siswa' ? <SiswaMode /> : <GuruMode />}
