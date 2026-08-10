@@ -343,6 +343,9 @@ table.recap td.num { font-family: 'JetBrains Mono', monospace; text-align: cente
 table.recap tr:last-child td { border-bottom: none; }
 
 /* Utilities */
+.recent-checkins-scroll::-webkit-scrollbar { display: none; }
+.recent-checkins-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
 .note { font-size: 13px; color: var(--text-secondary); margin-top: 8px; line-height: 1.5; }
 .empty { text-align: center; padding: 40px 20px; color: var(--text-secondary); font-size: 15px; }
 .empty b { display: block; color: var(--text-primary); font-family: 'Outfit', sans-serif; font-size: 18px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.02em; }

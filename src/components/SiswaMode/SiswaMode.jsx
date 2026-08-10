@@ -16,6 +16,7 @@ export default function SiswaMode() {
   const [cameraStream, setCameraStream] = useState(null);
   const [capturedPhoto, setCapturedPhoto] = useState(null);
   const [isEskul, setIsEskul] = useState(false);
+  const [recentCheckins, setRecentCheckins] = useState([]);
 
   const videoRef = useRef(null);
   const showToast = useToast();
@@ -29,6 +30,30 @@ export default function SiswaMode() {
     const d = new Date();
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   };
+
+  const loadRecentCheckins = async () => {
+    try {
+      const today = todayStr();
+      const { data, error } = await supabase
+        .from('attendance')
+        .select('time, status, selfie_url, students(name)')
+        .eq('date', today)
+        .order('time', { ascending: false })
+        .limit(10);
+      
+      if (!error && data) {
+        setRecentCheckins(data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    if (checkinState === 'idle') {
+      loadRecentCheckins();
+    }
+  }, [checkinState]);
 
   useEffect(() => {
     return () => stopCamera();
@@ -291,6 +316,45 @@ export default function SiswaMode() {
           {checkinState === 'not-found' && (
             <div className="status-box err" style={{ marginTop: 24, justifyContent: 'center' }}>
               NISN "{nis}" tidak ditemukan.
+            </div>
+          )}
+
+          {recentCheckins.length > 0 && (
+            <div style={{ marginTop: 32, textAlign: 'left' }}>
+              <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 16, fontWeight: 500, textAlign: 'center' }}>Baru Saja Hadir Hari Ini</div>
+              <div className="recent-checkins-scroll" style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '12px', justifyContent: recentCheckins.length < 5 ? 'center' : 'flex-start' }}>
+                {recentCheckins.map((rec, i) => {
+                  const studentName = rec.students?.name || 'Siswa';
+                  const initial = studentName.charAt(0).toUpperCase();
+                  const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+                  const bgColor = colors[studentName.length % colors.length];
+
+                  return (
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '64px', flexShrink: 0 }}>
+                      {rec.selfie_url ? (
+                        <img 
+                          src={rec.selfie_url} 
+                          alt={studentName} 
+                          style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--present)', padding: '2px', backgroundColor: 'var(--surface)' }}
+                        />
+                      ) : (
+                        <div style={{ 
+                          width: 52, height: 52, borderRadius: '50%', 
+                          backgroundColor: bgColor, color: '#fff', 
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                          fontSize: 22, fontWeight: 'bold', border: '3px solid var(--present)', padding: '2px', backgroundClip: 'content-box'
+                        }}>
+                          {initial}
+                        </div>
+                      )}
+                      <div style={{ fontSize: 11, color: 'var(--text-primary)', marginTop: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '64px', textAlign: 'center', fontWeight: 500 }}>
+                        {studentName.split(' ')[0]}
+                      </div>
+                      <div style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{rec.time}</div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </Card>
