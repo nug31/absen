@@ -38,9 +38,8 @@ export default function SiswaMode() {
         .from('attendance')
         .select('time, status, selfie_url, students(name)')
         .eq('date', today)
-        .order('time', { ascending: false })
-        .limit(10);
-      
+        .order('time', { ascending: true });
+
       if (!error && data) {
         setRecentCheckins(data);
       }
@@ -229,7 +228,7 @@ export default function SiswaMode() {
       dist = haversine(coords.lat, coords.lng, schoolLat, schoolLng);
       within = dist <= radius;
     } else {
-      within = true; 
+      within = true;
     }
 
     // Bypass location check if Eskul
@@ -282,15 +281,52 @@ export default function SiswaMode() {
 
   return (
     <div style={{ maxWidth: 420, margin: '0 auto' }}>
-      <AbsenReminder alreadyCheckedIn={alreadyCheckedIn} />
-
       {checkinState === 'idle' || checkinState === 'not-found' ? (
-        <Card style={{ padding: '32px 24px', textAlign: 'center' }}>
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>👋</div>
-            <h2 style={{ fontSize: 24, marginBottom: 8, color: 'var(--text-primary)' }}>Absen Masuk</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Silakan masukkan NISN Anda untuk melanjutkan</p>
-          </div>
+        <>
+          {recentCheckins.length > 0 && (
+            <div style={{ marginBottom: 24, textAlign: 'left' }}>
+              <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 16, fontWeight: 500, textAlign: 'center' }}>Siswa Hadir Hari Ini</div>
+              <div className="recent-checkins-scroll" style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '12px', justifyContent: recentCheckins.length < 5 ? 'center' : 'flex-start' }}>
+                {recentCheckins.map((rec, i) => {
+                  const studentName = rec.students?.name || 'Siswa';
+                  const initial = studentName.charAt(0).toUpperCase();
+                  const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+                  const bgColor = colors[studentName.length % colors.length];
+
+                  return (
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '64px', flexShrink: 0 }}>
+                      {rec.selfie_url ? (
+                        <img
+                          src={rec.selfie_url}
+                          alt={studentName}
+                          style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--present)', padding: '2px', backgroundColor: 'var(--surface)' }}
+                        />
+                      ) : (
+                        <div style={{
+                          width: 52, height: 52, borderRadius: '50%',
+                          backgroundColor: bgColor, color: '#fff',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 22, fontWeight: 'bold', border: '3px solid var(--present)', padding: '2px', backgroundClip: 'content-box'
+                        }}>
+                          {initial}
+                        </div>
+                      )}
+                      <div style={{ fontSize: 11, color: 'var(--text-primary)', marginTop: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '64px', textAlign: 'center', fontWeight: 500 }}>
+                        {studentName.split(' ')[0]}
+                      </div>
+                      <div style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{rec.time}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <Card style={{ padding: '32px 24px', textAlign: 'center' }}>
+            <div style={{ marginBottom: 24 }}>
+              <h2 style={{ fontSize: 24, marginBottom: 8, color: 'var(--text-primary)' }}>Absen Masuk</h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Silakan masukkan NISN Anda untuk melanjutkan</p>
+            </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: 300, margin: '0 auto' }}>
             <input
@@ -319,45 +355,8 @@ export default function SiswaMode() {
             </div>
           )}
 
-          {recentCheckins.length > 0 && (
-            <div style={{ marginTop: 32, textAlign: 'left' }}>
-              <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 16, fontWeight: 500, textAlign: 'center' }}>Baru Saja Hadir Hari Ini</div>
-              <div className="recent-checkins-scroll" style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '12px', justifyContent: recentCheckins.length < 5 ? 'center' : 'flex-start' }}>
-                {recentCheckins.map((rec, i) => {
-                  const studentName = rec.students?.name || 'Siswa';
-                  const initial = studentName.charAt(0).toUpperCase();
-                  const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
-                  const bgColor = colors[studentName.length % colors.length];
-
-                  return (
-                    <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '64px', flexShrink: 0 }}>
-                      {rec.selfie_url ? (
-                        <img 
-                          src={rec.selfie_url} 
-                          alt={studentName} 
-                          style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--present)', padding: '2px', backgroundColor: 'var(--surface)' }}
-                        />
-                      ) : (
-                        <div style={{ 
-                          width: 52, height: 52, borderRadius: '50%', 
-                          backgroundColor: bgColor, color: '#fff', 
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                          fontSize: 22, fontWeight: 'bold', border: '3px solid var(--present)', padding: '2px', backgroundClip: 'content-box'
-                        }}>
-                          {initial}
-                        </div>
-                      )}
-                      <div style={{ fontSize: 11, color: 'var(--text-primary)', marginTop: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '64px', textAlign: 'center', fontWeight: 500 }}>
-                        {studentName.split(' ')[0]}
-                      </div>
-                      <div style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{rec.time}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </Card>
+        </>
       ) : (
         <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
           <div style={{ textAlign: 'center', padding: '16px 0 24px' }}>
@@ -438,6 +437,10 @@ export default function SiswaMode() {
           </div>
         </div>
       )}
+
+      <div style={{ marginTop: 24 }}>
+        <AbsenReminder alreadyCheckedIn={alreadyCheckedIn} />
+      </div>
     </div>
   );
 }
