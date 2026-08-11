@@ -293,20 +293,26 @@ export default function SiswaMode() {
                   const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
                   const bgColor = colors[studentName.length % colors.length];
 
+                  let borderColor = 'var(--present)';
+                  if (rec.status === 'S') borderColor = 'var(--sick)';
+                  else if (rec.status === 'I') borderColor = 'var(--izin)';
+                  else if (rec.status === 'A') borderColor = 'var(--alpa)';
+                  else if (rec.status === 'E') borderColor = 'var(--eskul)';
+
                   return (
                     <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '64px', flexShrink: 0 }}>
                       {rec.selfie_url ? (
                         <img
                           src={rec.selfie_url}
                           alt={studentName}
-                          style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--present)', padding: '2px', backgroundColor: 'var(--surface)' }}
+                          style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', border: `3px solid ${borderColor}`, padding: '2px', backgroundColor: 'var(--surface)' }}
                         />
                       ) : (
                         <div style={{
                           width: 52, height: 52, borderRadius: '50%',
                           backgroundColor: bgColor, color: '#fff',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 22, fontWeight: 'bold', border: '3px solid var(--present)', padding: '2px', backgroundClip: 'content-box'
+                          fontSize: 22, fontWeight: 'bold', border: `3px solid ${borderColor}`, padding: '2px', backgroundClip: 'content-box'
                         }}>
                           {initial}
                         </div>
