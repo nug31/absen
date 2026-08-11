@@ -17,6 +17,8 @@ export default function SiswaMode() {
   const [capturedPhoto, setCapturedPhoto] = useState(null);
   const [isEskul, setIsEskul] = useState(false);
   const [recentCheckins, setRecentCheckins] = useState([]);
+  const [absentStudents, setAbsentStudents] = useState([]);
+  const [showAbsent, setShowAbsent] = useState(false);
 
   const videoRef = useRef(null);
   const showToast = useToast();
@@ -36,12 +38,27 @@ export default function SiswaMode() {
       const today = todayStr();
       const { data, error } = await supabase
         .from('attendance')
-        .select('time, status, selfie_url, students(name)')
+        .select('time, status, selfie_url, students(name, id)')
         .eq('date', today)
         .order('time', { ascending: true });
 
       if (!error && data) {
         setRecentCheckins(data);
+
+        // Hitung yang belum absen
+        const checkedInIds = new Set(data.map(r => r.students?.id).filter(Boolean));
+
+        // Ambil semua siswa
+        let allStudents = [];
+        const { data: stuData } = await supabase.from('students').select('id, name').order('name');
+        if (stuData && stuData.length > 0) {
+          allStudents = stuData;
+        } else {
+          allStudents = defaultStudents;
+        }
+
+        const absent = allStudents.filter(s => !checkedInIds.has(s.id));
+        setAbsentStudents(absent);
       }
     } catch (e) {
       console.error(e);
@@ -328,40 +345,154 @@ export default function SiswaMode() {
             </div>
           )}
 
+          {/* ===== BELUM ABSEN SECTION ===== */}
+          {absentStudents.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              {/* Header card - bisa diklik untuk expand/collapse */}
+              <button
+                onClick={() => setShowAbsent(p => !p)}
+                style={{
+                  width: '100%',
+                  background: 'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05))',
+                  border: '1px solid rgba(239,68,68,0.3)',
+                  borderRadius: showAbsent ? '16px 16px 0 0' : '16px',
+                  padding: '14px 18px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  transition: 'all 0.25s ease',
+                  color: 'var(--text-primary)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  {/* Counter lingkaran merah */}
+                  <div style={{
+                    width: 44, height: 44,
+                    borderRadius: '50%',
+                    background: 'rgba(239,68,68,0.2)',
+                    border: '2px solid rgba(239,68,68,0.6)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <span style={{ fontFamily: '"Outfit", sans-serif', fontSize: 18, fontWeight: 700, color: '#f87171' }}>
+                      {absentStudents.length}
+                    </span>
+                  </div>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontFamily: '"Outfit", sans-serif', fontWeight: 600, fontSize: 15, color: '#f87171' }}>Belum Absen</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+                      {absentStudents.length} siswa dari {absentStudents.length + recentCheckins.length} total
+                    </div>
+                  </div>
+                </div>
+                {/* Chevron */}
+                <div style={{
+                  color: '#f87171',
+                  fontSize: 18,
+                  transition: 'transform 0.25s ease',
+                  transform: showAbsent ? 'rotate(180deg)' : 'rotate(0deg)',
+                  lineHeight: 1,
+                }}>
+                  ▾
+                </div>
+              </button>
+
+              {/* Daftar expandable */}
+              {showAbsent && (
+                <div style={{
+                  border: '1px solid rgba(239,68,68,0.2)',
+                  borderTop: 'none',
+                  borderRadius: '0 0 16px 16px',
+                  background: 'rgba(239,68,68,0.04)',
+                  overflow: 'hidden',
+                  animation: 'fadeIn 0.2s ease-out',
+                }}>
+                  <div style={{ maxHeight: 280, overflowY: 'auto', padding: '8px 0' }}>
+                    {absentStudents.map((s, idx) => {
+                      const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#14b8a6', '#0ea5e9'];
+                      const bg = colors[s.name.length % colors.length];
+                      const initial = s.name.charAt(0).toUpperCase();
+                      return (
+                        <div key={s.id} style={{
+                          display: 'flex', alignItems: 'center', gap: 12,
+                          padding: '8px 16px',
+                          borderBottom: idx < absentStudents.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                        }}>
+                          {/* Nomor urut */}
+                          <div style={{ fontSize: 11, color: 'var(--text-secondary)', minWidth: 20, textAlign: 'right', fontFamily: '"JetBrains Mono", monospace' }}>
+                            {idx + 1}
+                          </div>
+                          {/* Avatar */}
+                          <div style={{
+                            width: 32, height: 32, borderRadius: '50%',
+                            background: bg, color: '#fff',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 14, fontWeight: 700, flexShrink: 0,
+                            opacity: 0.7,
+                          }}>
+                            {initial}
+                          </div>
+                          {/* Nama */}
+                          <div style={{ flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {s.name}
+                          </div>
+                          {/* Badge */}
+                          <div style={{
+                            fontSize: 10, fontWeight: 600,
+                            color: '#f87171',
+                            background: 'rgba(239,68,68,0.15)',
+                            border: '1px solid rgba(239,68,68,0.3)',
+                            borderRadius: 6,
+                            padding: '2px 8px',
+                            flexShrink: 0,
+                            letterSpacing: '0.05em',
+                          }}>
+                            ABSEN
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <Card style={{ padding: '32px 24px', textAlign: 'center' }}>
             <div style={{ marginBottom: 24 }}>
               <h2 style={{ fontSize: 24, marginBottom: 8, color: 'var(--text-primary)' }}>Absen Masuk</h2>
               <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Silakan masukkan NISN Anda untuk melanjutkan</p>
             </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: 300, margin: '0 auto' }}>
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="Ketik NISN..."
-              value={nis}
-              onChange={e => setNis(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleNisSubmit()}
-              style={{
-                fontSize: 20,
-                padding: '16px',
-                textAlign: 'center',
-                letterSpacing: '2px',
-                borderRadius: '16px',
-                backgroundColor: 'rgba(15,23,42,0.8)',
-                border: '2px solid var(--surface-border)'
-              }}
-            />
-            <Button onClick={handleNisSubmit} style={{ padding: '16px', fontSize: 16, borderRadius: '16px' }}>Lanjutkan</Button>
-          </div>
-
-          {checkinState === 'not-found' && (
-            <div className="status-box err" style={{ marginTop: 24, justifyContent: 'center' }}>
-              NISN "{nis}" tidak ditemukan.
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: 300, margin: '0 auto' }}>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="Ketik NISN..."
+                value={nis}
+                onChange={e => setNis(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleNisSubmit()}
+                style={{
+                  fontSize: 20,
+                  padding: '16px',
+                  textAlign: 'center',
+                  letterSpacing: '2px',
+                  borderRadius: '16px',
+                  backgroundColor: 'rgba(15,23,42,0.8)',
+                  border: '2px solid var(--surface-border)'
+                }}
+              />
+              <Button onClick={handleNisSubmit} style={{ padding: '16px', fontSize: 16, borderRadius: '16px' }}>Lanjutkan</Button>
             </div>
-          )}
 
-        </Card>
+            {checkinState === 'not-found' && (
+              <div className="status-box err" style={{ marginTop: 24, justifyContent: 'center' }}>
+                NISN "{nis}" tidak ditemukan.
+              </div>
+            )}
+
+          </Card>
         </>
       ) : (
         <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
