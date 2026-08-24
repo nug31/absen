@@ -17,6 +17,38 @@ export default function GuruPanelRekap() {
     loadRekap();
   }, []);
 
+  const fetchAllAttendance = async () => {
+    let allData = [];
+    let from = 0;
+    const limit = 1000;
+    let hasMore = true;
+
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from('attendance')
+        .select('student_id, date, status, pending')
+        .order('date')
+        .range(from, from + limit - 1);
+
+      if (error) {
+        console.error("Error fetching attendance:", error);
+        break;
+      }
+
+      if (data && data.length > 0) {
+        allData = allData.concat(data);
+        if (data.length < limit) {
+          hasMore = false;
+        } else {
+          from += limit;
+        }
+      } else {
+        hasMore = false;
+      }
+    }
+    return allData;
+  };
+
   const loadRekap = async () => {
     setLoading(true);
 
@@ -25,12 +57,8 @@ export default function GuruPanelRekap() {
     const stus = (stuData && stuData.length > 0) ? stuData : defaultStudents;
     setStudents(stus);
 
-    // Load semua attendance
-    const { data: attData } = await supabase
-      .from('attendance')
-      .select('student_id, date, status, pending')
-      .order('date')
-      .limit(10000);
+    // Load semua attendance (paginated)
+    const attData = await fetchAllAttendance();
 
     const dateSet = new Set();
     const calcTotals = {};
@@ -60,11 +88,8 @@ export default function GuruPanelRekap() {
       return;
     }
 
-    // Fetch attendance data
-    const { data: attData } = await supabase
-      .from('attendance')
-      .select('student_id, date, status, pending')
-      .limit(10000);
+    // Fetch attendance data (paginated)
+    const attData = await fetchAllAttendance();
 
     // Map: { date: { student_id: record } }
     const attByDate = {};
