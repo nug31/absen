@@ -198,10 +198,19 @@ export default function GuruPanelAbsen() {
                       {rec && (
                         <button
                           onClick={() => handleReset(s.id)}
-                          title="Hapus / Reset Absen"
-                          style={{ color: '#ef4444', marginLeft: 4 }}
+                          title="Tolak & Reset Absen (Siswa harus absen ulang)"
+                          style={{ 
+                            color: '#ef4444', 
+                            marginLeft: 8,
+                            padding: '4px 8px',
+                            fontSize: '12px',
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            border: '1px solid rgba(239, 68, 68, 0.2)',
+                            borderRadius: '6px',
+                            fontWeight: '600'
+                          }}
                         >
-                          ✕
+                          Reset
                         </button>
                       )}
                     </div>

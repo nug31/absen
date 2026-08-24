@@ -29,7 +29,8 @@ export default function GuruPanelRekap() {
     const { data: attData } = await supabase
       .from('attendance')
       .select('student_id, date, status, pending')
-      .order('date');
+      .order('date')
+      .limit(10000);
 
     const dateSet = new Set();
     const calcTotals = {};
@@ -62,7 +63,8 @@ export default function GuruPanelRekap() {
     // Fetch attendance data
     const { data: attData } = await supabase
       .from('attendance')
-      .select('student_id, date, status, pending');
+      .select('student_id, date, status, pending')
+      .limit(10000);
 
     // Map: { date: { student_id: record } }
     const attByDate = {};
