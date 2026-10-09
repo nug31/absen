@@ -3,7 +3,9 @@ import { Card } from '../UI/Card';
 import { Button } from '../UI/Button';
 import { useToast } from '../UI/Toast';
 import AbsenReminder from '../UI/AbsenReminder';
+import TopPelanggaran from '../UI/TopPelanggaran';
 import { haversine, getCurrentLocation } from '../../utils/geo';
+import { loadFaceDetector, checkFace } from '../../utils/faceDetect';
 import { supabase } from '../../lib/supabase';
 import defaultStudents from '../../data/defaultStudents';
 
@@ -19,6 +21,7 @@ export default function SiswaMode() {
   const [recentCheckins, setRecentCheckins] = useState([]);
   const [absentStudents, setAbsentStudents] = useState([]);
   const [showAbsent, setShowAbsent] = useState(false);
+  const [faceStatus, setFaceStatus] = useState({ ok: false, msg: '' });
 
   const videoRef = useRef(null);
   const showToast = useToast();
@@ -158,9 +161,48 @@ export default function SiswaMode() {
     }
   }, [checkinState, cameraStream]);
 
+  // Pantau wajah selama kamera aktif; foto hanya bisa diambil jika wajah terdeteksi
+  useEffect(() => {
+    if (checkinState !== 'camera-ready' || !cameraStream) return;
+    let raf;
+    let cancelled = false;
+    let last = 0;
+    setFaceStatus({ ok: false, msg: 'Menyiapkan pendeteksi wajah...' });
+
+    loadFaceDetector()
+      .then(() => {
+        const tick = (now) => {
+          if (cancelled) return;
+          if (now - last > 150) {
+            last = now;
+            const res = checkFace(videoRef.current);
+            setFaceStatus(prev => (prev.msg === res.msg ? prev : res));
+          }
+          raf = requestAnimationFrame(tick);
+        };
+        raf = requestAnimationFrame(tick);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setFaceStatus({ ok: false, failed: true, msg: 'Pendeteksi wajah gagal dimuat. Periksa koneksi internet, lalu coba lagi.' });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+    };
+  }, [checkinState, cameraStream]);
+
   const capturePhoto = () => {
     if (!videoRef.current) return;
     const video = videoRef.current;
+    const check = checkFace(video);
+    if (!check.ok) {
+      setFaceStatus(check);
+      showToast(check.msg);
+      return;
+    }
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -199,12 +241,13 @@ export default function SiswaMode() {
       const { data: urlData } = supabase.storage.from('absenio').getPublicUrl(filePath);
       return urlData?.publicUrl || null;
     } catch (e) {
-      console.warn('Upload selfie gagal, lanjut tanpa foto:', e.message);
+      console.warn('Upload selfie gagal:', e.message);
       return null;
     }
   };
 
   const submitCheckin = async () => {
+    if (!capturedPhoto) return;
     setCheckinState('uploading');
     setCameraError('');
 
@@ -232,6 +275,12 @@ export default function SiswaMode() {
     // Upload foto selfie
     const today = todayStr();
     const selfieUrl = await uploadSelfie(capturedPhoto, matchedStudent.id, today);
+    if (!selfieUrl) {
+      // Selfie wajib: tanpa foto, absen tidak disimpan
+      setCameraError('Foto selfie gagal diunggah. Periksa koneksi internet, lalu kirim ulang.');
+      setCheckinState('photo-captured');
+      return;
+    }
 
     let record;
     const schoolLat = parseFloat(cfg.schoolLat);
@@ -459,6 +508,8 @@ export default function SiswaMode() {
             </div>
           )}
 
+          <TopPelanggaran limit={5} />
+
           <Card style={{ padding: '32px 24px', textAlign: 'center' }}>
             <div style={{ marginBottom: 24 }}>
               <h2 style={{ fontSize: 24, marginBottom: 8, color: 'var(--text-primary)' }}>Absen Masuk</h2>
@@ -529,7 +580,7 @@ export default function SiswaMode() {
                   </label>
                 </div>
               )}
-              <div className="note" style={{ textAlign: 'center', marginBottom: 16 }}>Ambil selfie untuk absen hari ini. Pastikan izin kamera & lokasi diaktifkan.</div>
+              <div className="note" style={{ textAlign: 'center', marginBottom: 16 }}>Absen wajib selfie wajah. Pastikan wajah terlihat jelas dan izin kamera & lokasi diaktifkan.</div>
               <div style={{ display: 'flex', justifyContent: 'center' }}>
                 <Button onClick={startCamera}>Buka Kamera</Button>
               </div>
@@ -541,8 +592,15 @@ export default function SiswaMode() {
               <div className="cam-wrap">
                 <video ref={videoRef} autoPlay playsInline muted></video>
               </div>
+              <div className={`status-box ${faceStatus.ok ? 'ok' : faceStatus.failed ? 'err' : 'warn'}`} style={{ marginTop: 16, marginBottom: 0, justifyContent: 'center', textAlign: 'center' }}>
+                {faceStatus.msg}
+              </div>
               <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
-                <Button onClick={capturePhoto}>Ambil Foto</Button>
+                {faceStatus.failed ? (
+                  <Button onClick={startCamera}>Coba Lagi</Button>
+                ) : (
+                  <Button onClick={capturePhoto} disabled={!faceStatus.ok}>Ambil Foto</Button>
+                )}
               </div>
             </>
           )}

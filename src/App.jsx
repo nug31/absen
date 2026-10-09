@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import SiswaMode from './components/SiswaMode/SiswaMode';
 import GuruMode from './components/GuruMode/GuruMode';
+import OrtuMode from './components/OrtuMode/OrtuMode';
 import { ToastProvider } from './components/UI/Toast';
 
 function App() {
-  const [mode, setMode] = useState('siswa');
+  // Link orang tua: /?ortu=KODE
+  const ortuCode = new URLSearchParams(window.location.search).get('ortu');
+  const [mode, setMode] = useState(ortuCode !== null ? 'ortu' : 'siswa');
   const [clockDate, setClockDate] = useState('');
 
   useEffect(() => {
@@ -30,7 +33,7 @@ function App() {
         <div className="plate-left">
           <div 
             className="plate-badge" 
-            onDoubleClick={() => setMode(mode === 'siswa' ? 'guru' : 'siswa')}
+            onDoubleClick={() => mode !== 'ortu' && setMode(mode === 'siswa' ? 'guru' : 'siswa')}
             style={{ cursor: 'pointer' }}
             title="Ketuk 2x untuk masuk Mode Guru"
           >
@@ -63,7 +66,7 @@ function App() {
       */}
 
       <main>
-        {mode === 'siswa' ? <SiswaMode /> : <GuruMode />}
+        {mode === 'ortu' ? <OrtuMode code={(ortuCode || '').trim().toUpperCase()} /> : mode === 'siswa' ? <SiswaMode /> : <GuruMode />}
       </main>
     </ToastProvider>
   );

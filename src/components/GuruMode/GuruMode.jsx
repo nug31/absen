@@ -9,6 +9,7 @@ import GuruPanelAbsen from './GuruPanelAbsen';
 import GuruPanelSiswa from './GuruPanelSiswa';
 import GuruPanelRekap from './GuruPanelRekap';
 import GuruPanelSetting from './GuruPanelSetting';
+import GuruPanelPelanggaran from './GuruPanelPelanggaran';
 
 export default function GuruMode() {
   const [authed, setAuthed] = useState(false);
@@ -95,6 +96,7 @@ export default function GuruMode() {
         <button className={`switch-btn ${activeTab === 'absen' ? 'active' : ''}`} onClick={() => setActiveTab('absen')}>Absensi</button>
         <button className={`switch-btn ${activeTab === 'siswa' ? 'active' : ''}`} onClick={() => setActiveTab('siswa')}>Kelola Siswa</button>
         <button className={`switch-btn ${activeTab === 'rekap' ? 'active' : ''}`} onClick={() => setActiveTab('rekap')}>Rekap</button>
+        <button className={`switch-btn ${activeTab === 'pelanggaran' ? 'active' : ''}`} onClick={() => setActiveTab('pelanggaran')}>Pelanggaran</button>
         <button className={`switch-btn ${activeTab === 'setting' ? 'active' : ''}`} onClick={() => setActiveTab('setting')}>Pengaturan</button>
       </div>
 
@@ -102,6 +104,7 @@ export default function GuruMode() {
         {activeTab === 'absen' && <GuruPanelAbsen />}
         {activeTab === 'siswa' && <GuruPanelSiswa />}
         {activeTab === 'rekap' && <GuruPanelRekap />}
+        {activeTab === 'pelanggaran' && <GuruPanelPelanggaran />}
         {activeTab === 'setting' && <GuruPanelSetting config={config} setConfig={setConfig} />}
       </div>
     </div>

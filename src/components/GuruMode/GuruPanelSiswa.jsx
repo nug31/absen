@@ -68,6 +68,34 @@ export default function GuruPanelSiswa() {
     showToast('Siswa ditambahkan');
   };
 
+  // Buat (jika belum ada) kode orang tua lalu bagikan/salin link pantauannya
+  const handleParentLink = async (s) => {
+    let code = s.parent_code;
+    if (!code) {
+      const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      code = Array.from(crypto.getRandomValues(new Uint8Array(8)), b => alphabet[b % alphabet.length]).join('');
+      const { error } = await supabase.from('students').update({ parent_code: code }).eq('id', s.id);
+      if (error) {
+        return showToast(error.message.includes('parent_code')
+          ? 'Kolom parent_code belum ada. Jalankan supabase_migration_ortu.sql dulu.'
+          : 'Gagal membuat kode: ' + error.message);
+      }
+      setStudents(prev => prev.map(x => (x.id === s.id ? { ...x, parent_code: code } : x)));
+    }
+
+    const url = `${window.location.origin}/?ortu=${code}`;
+    const text = `Link pantau absensi ${s.name}: ${url}`;
+    try {
+      if (navigator.share) await navigator.share({ text });
+      else {
+        await navigator.clipboard.writeText(text);
+        showToast('Link orang tua disalin');
+      }
+    } catch (e) {
+      if (e.name !== 'AbortError') window.prompt('Salin link orang tua:', url);
+    }
+  };
+
   const handleDelete = async (id, name) => {
     if (!window.confirm(`Hapus ${name} dari daftar?`)) return;
     const { error } = await supabase.from('students').delete().eq('id', id);
@@ -116,8 +144,12 @@ export default function GuruPanelSiswa() {
                 <div>
                   <div className="stu-name">{s.name}</div>
                   {s.nis && <div className="stu-nis">NISN {s.nis}</div>}
+                  {s.parent_code && <div className="stu-nis">Kode ortu {s.parent_code}</div>}
                 </div>
-                <Button variant="danger" size="sm" onClick={() => handleDelete(s.id, s.name)}>Hapus</Button>
+                <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                  <Button variant="ghost" size="sm" onClick={() => handleParentLink(s)}>Link Ortu</Button>
+                  <Button variant="danger" size="sm" onClick={() => handleDelete(s.id, s.name)}>Hapus</Button>
+                </div>
               </div>
             ))}
           </div>

@@ -8,7 +8,8 @@
 CREATE TABLE IF NOT EXISTS students (
   id       TEXT PRIMARY KEY,
   name     TEXT NOT NULL,
-  nis      TEXT NOT NULL UNIQUE
+  nis      TEXT NOT NULL UNIQUE,
+  parent_code TEXT UNIQUE        -- kode link orang tua (/?ortu=KODE)
 );
 
 -- 2. Tabel Absensi Harian
@@ -34,6 +35,18 @@ CREATE TABLE IF NOT EXISTS config (
   key   TEXT PRIMARY KEY,
   value TEXT
 );
+
+-- 3b. Tabel Pelanggaran Atribut (satu baris = satu atribut tidak dibawa)
+CREATE TABLE IF NOT EXISTS violations (
+  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  student_id  TEXT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  date        TEXT NOT NULL,
+  type        TEXT NOT NULL,     -- Topi | ID Card | Nametag | ...
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(student_id, date, type)
+);
+ALTER TABLE violations ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public_all" ON violations FOR ALL USING (true) WITH CHECK (true);
 
 -- 4. Seed konfigurasi default
 INSERT INTO config (key, value) VALUES ('pin', '1234') ON CONFLICT (key) DO NOTHING;
