@@ -196,17 +196,17 @@ export default function OrtuMode({ code: initialCode }) {
       </div>
 
       <Card style={{ marginBottom: 16 }}>
-        <span className="field-label">Pelanggaran Atribut</span>
+        <span className="field-label">Pelanggaran</span>
         {violations.length === 0 ? (
-          <div className="status-box ok" style={{ marginBottom: 0 }}>Tidak ada pelanggaran atribut pada bulan ini.</div>
+          <div className="status-box ok" style={{ marginBottom: 0 }}>Tidak ada pelanggaran pada bulan ini.</div>
         ) : (
           <>
-            <div className="status-box err">{violations.length} pelanggaran atribut pada bulan ini.</div>
+            <div className="status-box err">{violations.length} pelanggaran pada bulan ini.</div>
             {[...new Set(violations.map(v => v.date))].map(d => (
               <div key={d} className="roster-row">
                 <span className="stu-name">{fmtDate(d)}</span>
                 <div className="note" style={{ margin: '4px 0 0' }}>
-                  Tidak membawa: {violations.filter(v => v.date === d).map(v => v.type).join(', ')}
+                  {violations.filter(v => v.date === d).map(v => v.type).join(', ')}
                 </div>
               </div>
             ))}

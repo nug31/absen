@@ -69,7 +69,7 @@ export default function GuruPanelPelanggaran() {
           </div>
           <div className="note" style={{ margin: 0, color: 'var(--text-primary)' }}>{totalToday} pelanggaran dicatat</div>
         </div>
-        <div className="note">Ketuk atribut yang tidak dibawa siswa. Ketuk lagi untuk membatalkan.</div>
+        <div className="note">Ketuk Terlambat atau atribut yang tidak dibawa siswa. Ketuk lagi untuk membatalkan.</div>
       </Card>
 
       {tableMissing && (

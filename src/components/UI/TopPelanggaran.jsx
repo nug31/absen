@@ -7,6 +7,11 @@ const monthStart = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
 };
 
+const fmtDay = (dstr) =>
+  new Date(dstr + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' });
+
+const MAX_DAYS = 3; // jumlah hari terbaru yang ditampilkan per siswa
+
 const fetchViolations = async (fromDate) => {
   let all = [];
   let from = 0;
@@ -14,7 +19,7 @@ const fetchViolations = async (fromDate) => {
   for (;;) {
     let q = supabase
       .from('violations')
-      .select('type, students(id, name)')
+      .select('type, date, students(id, name)')
       .order('date')
       .range(from, from + limit - 1);
     if (fromDate) q = q.gte('date', fromDate);
@@ -32,9 +37,9 @@ const rankViolations = (rows) => {
   rows.forEach(r => {
     const stu = r.students;
     if (!stu) return;
-    if (!map[stu.id]) map[stu.id] = { id: stu.id, name: stu.name, total: 0, types: {} };
+    if (!map[stu.id]) map[stu.id] = { id: stu.id, name: stu.name, total: 0, days: {} };
     map[stu.id].total++;
-    map[stu.id].types[r.type] = (map[stu.id].types[r.type] || 0) + 1;
+    (map[stu.id].days[r.date] = map[stu.id].days[r.date] || []).push(r.type);
   });
   return Object.values(map).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
 };
@@ -66,15 +71,15 @@ export default function TopPelanggaran({ limit, refreshKey }) {
     <Card style={{ marginBottom: 24, textAlign: 'left' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 4 }}>
         <div style={{ fontFamily: '"Outfit", sans-serif', fontWeight: 600, fontSize: 16, color: '#f87171' }}>
-          Top Pelanggaran Atribut
+          Top Pelanggaran
         </div>
         <div className="rocker">
-          <button className={period === 'month' ? 'on a' : ''} onClick={() => setPeriod('month')}>Bulan Ini</button>
-          <button className={period === 'all' ? 'on a' : ''} onClick={() => setPeriod('all')}>Semua</button>
+          <button className={period === 'month' ? 'on a' : ''} style={{ width: 'auto', padding: '0 12px', whiteSpace: 'nowrap' }} onClick={() => setPeriod('month')}>Bulan Ini</button>
+          <button className={period === 'all' ? 'on a' : ''} style={{ width: 'auto', padding: '0 12px', whiteSpace: 'nowrap' }} onClick={() => setPeriod('all')}>Semua</button>
         </div>
       </div>
       <div className="note" style={{ marginTop: 0, marginBottom: 12 }}>
-        Tidak membawa topi, ID card, nametag, dan atribut lain. Jangan sampai namamu ada di sini.
+        Terlambat atau tidak membawa topi, ID card, nametag, dan atribut lain. Jangan sampai namamu ada di sini.
       </div>
 
       {state === 'loading' ? (
@@ -86,7 +91,7 @@ export default function TopPelanggaran({ limit, refreshKey }) {
       ) : (
         shown.map((s, idx) => (
           <div key={s.id} style={{
-            display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0',
+            display: 'flex', alignItems: 'flex-start', gap: 12, padding: '10px 0',
             borderBottom: idx < shown.length - 1 ? '1px solid var(--surface-border)' : 'none',
           }}>
             <div style={{
@@ -102,9 +107,16 @@ export default function TopPelanggaran({ limit, refreshKey }) {
               <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {s.name}
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
-                {Object.entries(s.types).sort((a, b) => b[1] - a[1]).map(([t, n]) => `${n}× ${t}`).join(' · ')}
-              </div>
+              {Object.keys(s.days).sort().reverse().slice(0, MAX_DAYS).map(d => (
+                <div key={d} style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+                  {fmtDay(d)}: {s.days[d].join(', ')}
+                </div>
+              ))}
+              {Object.keys(s.days).length > MAX_DAYS && (
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+                  +{Object.keys(s.days).length - MAX_DAYS} hari lainnya
+                </div>
+              )}
             </div>
             <div style={{ fontFamily: '"Outfit", sans-serif', fontSize: 20, fontWeight: 700, color: '#f87171', flexShrink: 0 }}>
               {s.total}
