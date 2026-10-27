@@ -508,7 +508,7 @@ export default function SiswaMode() {
             </div>
           )}
 
-          <TopPelanggaran limit={5} />
+          <TopPelanggaran compact />
 
           <Card style={{ padding: '32px 24px', textAlign: 'center' }}>
             <div style={{ marginBottom: 24 }}>

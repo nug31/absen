@@ -44,8 +44,8 @@ const rankViolations = (rows) => {
   return Object.values(map).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
 };
 
-// limit: tampilkan N teratas saja. refreshKey: ubah untuk memuat ulang.
-export default function TopPelanggaran({ limit, refreshKey }) {
+// compact: tampilan halaman siswa (daftar bisa di-scroll). refreshKey: ubah untuk memuat ulang.
+export default function TopPelanggaran({ compact, refreshKey }) {
   const [period, setPeriod] = useState('month'); // month, all
   const [ranking, setRanking] = useState([]);
   const [state, setState] = useState('loading'); // loading, ready, error
@@ -63,9 +63,9 @@ export default function TopPelanggaran({ limit, refreshKey }) {
   }, [period, refreshKey]);
 
   // Di halaman siswa, sembunyikan saja kalau datanya tidak bisa dimuat
-  if (state === 'error' && limit) return null;
+  if (state === 'error' && compact) return null;
 
-  const shown = limit ? ranking.slice(0, limit) : ranking;
+  const shown = ranking;
 
   return (
     <Card style={{ marginBottom: 24, textAlign: 'left' }}>
@@ -89,7 +89,10 @@ export default function TopPelanggaran({ limit, refreshKey }) {
       ) : shown.length === 0 ? (
         <div className="status-box ok" style={{ marginBottom: 0 }}>Belum ada pelanggaran. Pertahankan!</div>
       ) : (
-        shown.map((s, idx) => (
+        <>
+        <div className="note" style={{ marginTop: 0, marginBottom: 4 }}>{shown.length} siswa melanggar</div>
+        <div style={compact ? { maxHeight: 340, overflowY: 'auto', paddingRight: 4 } : undefined}>
+        {shown.map((s, idx) => (
           <div key={s.id} style={{
             display: 'flex', alignItems: 'flex-start', gap: 12, padding: '10px 0',
             borderBottom: idx < shown.length - 1 ? '1px solid var(--surface-border)' : 'none',
@@ -122,7 +125,9 @@ export default function TopPelanggaran({ limit, refreshKey }) {
               {s.total}
             </div>
           </div>
-        ))
+        ))}
+        </div>
+        </>
       )}
     </Card>
   );
